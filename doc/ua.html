@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>The Universal Aggregator</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#Usage">Usage</a>
+    <a href="#Dependencies">Dependencies</a>
+    <a href="#Installation">Installation</a>
+    <a href="#Configuration">Configuration</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>ua</li>
+    <li class='tc'></li>
+    <li class='tr'>ua</li>
+  </ol>
+
+  <h1>The Universal Aggregator</h1>
+<p>This is a set of tools to aggregate all your information into your
+maildir. Each tool can be used separately ; you can find a more complete
+description in their respective folder.</p>
+
+<ul>
+<li><code>ggs</code> is a software which runs commands periodically</li>
+<li><code>maildir-put</code> reads a set of messages from its standard input and puts
+them in a maildir</li>
+<li><code>rss2json</code> transforms any RSS/Atom feed into a set of messages that
+<code>maildir-put</code> can process</li>
+<li>You can write your own producers for maildir-put ; an example for the
+<a href="http://mangareader.net">mangareader</a> service is provided.</li>
+<li>You can also put filters, like <code>ua-inline</code></li>
+</ul>
+
+
+<h2 id="Usage">Usage</h2>
+
+<pre><code>ggs [path-to-configuration-file]
+</code></pre>
+
+<h2 id="Dependencies">Dependencies</h2>
+
+<ul>
+<li>Go</li>
+<li>libxml</li>
+<li>For additional scrappers: python 3, aiohttp and pyquery</li>
+</ul>
+
+
+<h2 id="Installation">Installation</h2>
+
+<pre><code>make &amp;&amp; sudo make install
+</code></pre>
+
+<h2 id="Configuration">Configuration</h2>
+
+<p>See the <code>ggs</code> documentation for more information. Here is an sample
+configuration file, which puts some feeds into <code>Fun</code> and <code>Geek</code> folders,
+some new chapters notification from mangareader into <code>Entertainment</code>,
+and my Github personal feed into inbox:</p>
+
+<pre><code>default_timeout=30
+
+rss() {
+    command 2000 "rss2json \"$1\" | ua-inline | maildir-put -root $HOME/Maildir-feeds -folder \"$2\""
+}
+
+mangareader() {
+    command 2000 "mangareader2json http://mangareader.net/$1 | "\
+        "maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
+}
+
+rss http://xkcd.com/atom.xml Fun
+rss http://feeds.feedburner.com/smbc-comics/PvLb Fun
+rss http://syndication.thedailywtf.com/TheDailyWtf Fun
+
+rss http://www.reddit.com/r/science/top/.rss Geek
+rss http://www.phoronix.com/rss.php Geek
+
+mangareader naruto
+mangareader bleach
+mangareader gantz
+
+rss https://github.com/sloonz.private.atom?token=HIDDEN ""
+</code></pre>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>March 2014</li>
+    <li class='tr'>ua</li>
+  </ol>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+default_timeout=30
+
+rss() {
+	command 2000 "rss2json \"$1\" | maildir-put -root $HOME/Maildir-feeds -folder \"$2\""
+}
+
+mangareader() {
+	command 2000 "mangareader2json http://mangareader.net/$1 | "\
+		"maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
+}
+
+rss http://xkcd.com/atom.xml Fun
+rss http://feeds.feedburner.com/smbc-comics/PvLb Fun
+rss http://syndication.thedailywtf.com/TheDailyWtf Fun
+
+rss http://www.reddit.com/r/science/top/.rss Geek
+rss http://www.phoronix.com/rss.php Geek
+
+mangareader naruto
+mangareader bleach
+mangareader gantz
+
+rss https://github.com/sloonz.private.atom?token=HIDDEN ""

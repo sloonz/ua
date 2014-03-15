@@ -1,0 +1,32 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "RSS2JSON" "" "March 2014" "" ""
+\fBrss2json\fR is a simple tool intended to be used with \fBmaildir\-put\fR and \fBggs\fR\. It is used to convert any RSS or Atom feed into a stream of messages usable by \fBmaildir\-put\fR\.
+.
+.SH "Usage"
+.
+.nf
+
+rss2json feed\-url
+.
+.fi
+.
+.SH "Dependencies"
+.
+.IP "\(bu" 4
+libxml
+.
+.IP "\(bu" 4
+Optional: python and feedparser for parsing of ill\-formed feeds
+.
+.IP "" 0
+.
+.SH "Installation"
+.
+.nf
+
+go build && cp rss2json /usr/local/bin
+.
+.fi
+

@@ -1,0 +1,58 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "GGS" "" "March 2014" "" ""
+\fBGGS\fR (Grey Goo Spawner) is a simple software that runs jobs periodically\. It is similar with cron, but with some differences :
+.
+.IP "\(bu" 4
+Whereas \fBcron\fR launches jobs at specific times, \fBggs\fR is mainly interested in intervals\. It will run all jobs at its startup and then will re\-run each job after a certain delay has passed\.
+.
+.IP "\(bu" 4
+\fBggs\fR has a system of \fBworkers\fR, similar to many servers (like nginx or Apache with MPM Workers) to limit ressource concurrency between your jobs \.
+.
+.IP "\(bu" 4
+You can define a timeout for your jobs, too\.
+.
+.IP "" 0
+.
+.SH "Usage"
+\fBggs [configuration file]\fR
+.
+.P
+If no configuration file is provided, \fBggs\fR will use \fB~/\.config/ggsrc\fR by default\.
+.
+.SH "Installation"
+\fBgo build ggs\.go && cp ggs /usr/local/bin\fR
+.
+.SH "Configuration"
+Configuration file is a shell script, so same rule as \fBsh\fR applies\.
+.
+.P
+You create a job with the \fBcommand\fR function, which takes two arguments: the delay between launches, and the command to run\. You can specify a timeout (in seconds) by setting the \fBtimeout\fR environnement variable (optional, default: 0 no timeout)\.
+.
+.IP "" 4
+.
+.nf
+
+timeout=30 command 300 "uptime | mail admin@example\.com"
+command 5 \'ping \-c 1 github\.com || sudo halt \-p\'
+.
+.fi
+.
+.IP "" 0
+.
+.P
+You can also set the number of workers (maximum number of jobs that can run simultaneously):
+.
+.IP "" 4
+.
+.nf
+
+workers=5 #Warning: dont do "workers = 5", spaces matters here !
+.
+.fi
+.
+.IP "" 0
+.
+.SH "Advanced configuration"
+The configuration file is just a shell script which produces a JSON document which maches the structure of the \fBConfig\fR structure\. You can do \fBexec my_script\fR to produce the same JSON with a script in your favorite language\. You can also use variables, functions, execute external commands, and so on\.\.\.

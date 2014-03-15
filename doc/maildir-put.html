@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='content-type' value='text/html;charset=utf8'>
+  <meta name='generator' value='Ronn/v0.7.3 (http://github.com/rtomayko/ronn/tree/0.7.3)'>
+  <title>maildir-put</title>
+  <style type='text/css' media='all'>
+  /* style: man */
+  body#manpage {margin:0}
+  .mp {max-width:100ex;padding:0 9ex 1ex 4ex}
+  .mp p,.mp pre,.mp ul,.mp ol,.mp dl {margin:0 0 20px 0}
+  .mp h2 {margin:10px 0 0 0}
+  .mp > p,.mp > pre,.mp > ul,.mp > ol,.mp > dl {margin-left:8ex}
+  .mp h3 {margin:0 0 0 4ex}
+  .mp dt {margin:0;clear:left}
+  .mp dt.flush {float:left;width:8ex}
+  .mp dd {margin:0 0 0 9ex}
+  .mp h1,.mp h2,.mp h3,.mp h4 {clear:left}
+  .mp pre {margin-bottom:20px}
+  .mp pre+h2,.mp pre+h3 {margin-top:22px}
+  .mp h2+pre,.mp h3+pre {margin-top:5px}
+  .mp img {display:block;margin:auto}
+  .mp h1.man-title {display:none}
+  .mp,.mp code,.mp pre,.mp tt,.mp kbd,.mp samp,.mp h3,.mp h4 {font-family:monospace;font-size:14px;line-height:1.42857142857143}
+  .mp h2 {font-size:16px;line-height:1.25}
+  .mp h1 {font-size:20px;line-height:2}
+  .mp {text-align:justify;background:#fff}
+  .mp,.mp code,.mp pre,.mp pre code,.mp tt,.mp kbd,.mp samp {color:#131211}
+  .mp h1,.mp h2,.mp h3,.mp h4 {color:#030201}
+  .mp u {text-decoration:underline}
+  .mp code,.mp strong,.mp b {font-weight:bold;color:#131211}
+  .mp em,.mp var {font-style:italic;color:#232221;text-decoration:none}
+  .mp a,.mp a:link,.mp a:hover,.mp a code,.mp a pre,.mp a tt,.mp a kbd,.mp a samp {color:#0000ff}
+  .mp b.man-ref {font-weight:normal;color:#434241}
+  .mp pre {padding:0 4ex}
+  .mp pre code {font-weight:normal;color:#434241}
+  .mp h2+pre,h3+pre {padding-left:0}
+  ol.man-decor,ol.man-decor li {margin:3px 0 10px 0;padding:0;float:left;width:33%;list-style-type:none;text-transform:uppercase;color:#999;letter-spacing:1px}
+  ol.man-decor {width:100%}
+  ol.man-decor li.tl {text-align:left}
+  ol.man-decor li.tc {text-align:center;letter-spacing:4px}
+  ol.man-decor li.tr {text-align:right;float:right}
+  </style>
+</head>
+<!--
+  The following styles are deprecated and will be removed at some point:
+  div#man, div#man ol.man, div#man ol.head, div#man ol.man.
+
+  The .man-page, .man-decor, .man-head, .man-foot, .man-title, and
+  .man-navigation should be used instead.
+-->
+<body id='manpage'>
+  <div class='mp' id='man'>
+
+  <div class='man-navigation' style='display:none'>
+    <a href="#Usage">Usage</a>
+    <a href="#Installation">Installation</a>
+    <a href="#Input-format">Input format</a>
+  </div>
+
+  <ol class='man-decor man-head man head'>
+    <li class='tl'>maildir-put</li>
+    <li class='tc'></li>
+    <li class='tr'>maildir-put</li>
+  </ol>
+
+  <h1>maildir-put</h1>
+<p><code>maildir-put</code> is a tool to put messages in a predefined JSON format
+inside a maildir. It also try to detect duplicates and drop them.</p>
+
+<h2 id="Usage">Usage</h2>
+
+<pre><code>message-producer | maildir-put [arguments]
+</code></pre>
+
+<p>Available arguments:</p>
+
+<ul>
+<li><em>-cache</em>: path to a cache file used to store message IDs for duplicate
+detection</li>
+<li><em>-root</em>: path to the root maildir directory. Defaults to ~/Maildir.</li>
+<li><em>-folder</em>: maildir folder to put messages. Defaults to "", the inbox.
+The folder separator is "/".</li>
+</ul>
+
+
+<h2 id="Installation">Installation</h2>
+
+<pre><code>go build &amp;&amp; cp maildir-put /usr/local/bin
+</code></pre>
+
+<h2 id="Input-format">Input format</h2>
+
+<p>As its input, <code>maildir-put</code> takes a stream of JSON dictionaries (not a
+list of dictionaries). Each dictionary represents a message. Available
+keys are:</p>
+
+<ul>
+<li><em>body</em>: the body of the message, in HTML. Mandatory.</li>
+<li><em>title</em>: the subject of the message, in text. Mandatory.</li>
+<li><em>date</em>: the date of the message. Optional, defaults to current time. If
+provided, must be RFC 2822 compliant.</li>
+<li><em>author</em>: the name of the author, in text. Optional.</li>
+<li><em>authorEmail</em>: the mail addresse of the author. Optional.</li>
+<li><em>id</em>: an unique identifier for the message. It will be used for the
+creation of the Message-Id header, as well as in duplicates detection. It
+should include three parts: an unique identifier for the application
+(for example: <code>rss2json</code>), an unique identifier for the paramenters
+(for example: the feed URL) and an unique identifier for the message
+(for example: an article ID). The identifier for the parameters may be
+omitted if you provide a <em>host</em> key and that the host is sufficient to
+identify the parameters. Mandatory for threaded discussions handling and
+duplicates detection, optional else.</li>
+<li><em>host</em>: the domain name of the producer of the message (in general,
+the hostname of the server form where you fetched the information). Used
+in <code>Message-Id</code> and <code>References</code> headers construction, as well as in
+duplicates detection. Optional, but strongly encouraged for threaded
+discussions handling and duplicates detection.</li>
+<li><em>references</em>: for threaded discussions, <em>id</em> of the parent messages. Note
+that <em>host</em> must match in the two messages.</li>
+<li><em>url</em>: URL of the message. Used by <code>ua-inline</code> to resolve relative
+references.</li>
+</ul>
+
+
+<p>All strings must be encoded in UTF-8.</p>
+
+
+  <ol class='man-decor man-foot man foot'>
+    <li class='tl'></li>
+    <li class='tc'>March 2014</li>
+    <li class='tr'>maildir-put</li>
+  </ol>
+
+  </div>
+</body>
+</html>

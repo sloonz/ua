@@ -1,0 +1,17 @@
+#!/usr/bin/python3
+
+import scraplib
+import sys
+import json
+
+def scrap_mangareader(url):
+	url = scraplib.urljoin("http://www.mangareader.net", url)
+	doc = yield from scraplib.fetch(url)
+	for chapter in doc("#latestchapters > ul > li").pq():
+		print(json.dumps({
+			"title": chapter.text(),
+			"body": '<a href="%s">%s</a>' % (chapter("a").url(), chapter.text()),
+			"id": "mangareader:"+chapter("a").url()
+		}))
+
+scraplib.main(scrap_mangareader(sys.argv[1]))

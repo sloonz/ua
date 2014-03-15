@@ -1,0 +1,87 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "UA" "" "March 2014" "" ""
+This is a set of tools to aggregate all your information into your maildir\. Each tool can be used separately ; you can find a more complete description in their respective folder\.
+.
+.IP "\(bu" 4
+\fBggs\fR is a software which runs commands periodically
+.
+.IP "\(bu" 4
+\fBmaildir\-put\fR reads a set of messages from its standard input and puts them in a maildir
+.
+.IP "\(bu" 4
+\fBrss2json\fR transforms any RSS/Atom feed into a set of messages that \fBmaildir\-put\fR can process
+.
+.IP "\(bu" 4
+You can write your own producers for maildir\-put ; an example for the mangareader \fIhttp://mangareader\.net\fR service is provided\.
+.
+.IP "\(bu" 4
+You can also put filters, like \fBua\-inline\fR
+.
+.IP "" 0
+.
+.SH "Usage"
+.
+.nf
+
+ggs [path\-to\-configuration\-file]
+.
+.fi
+.
+.SH "Dependencies"
+.
+.IP "\(bu" 4
+Go
+.
+.IP "\(bu" 4
+libxml
+.
+.IP "\(bu" 4
+For additional scrappers: python 3, aiohttp and pyquery
+.
+.IP "" 0
+.
+.SH "Installation"
+.
+.nf
+
+make && sudo make install
+.
+.fi
+.
+.SH "Configuration"
+See the \fBggs\fR documentation for more information\. Here is an sample configuration file, which puts some feeds into \fBFun\fR and \fBGeek\fR folders, some new chapters notification from mangareader into \fBEntertainment\fR, and my Github personal feed into inbox:
+.
+.IP "" 4
+.
+.nf
+
+default_timeout=30
+
+rss() {
+    command 2000 "rss2json \e"$1\e" | ua\-inline | maildir\-put \-root $HOME/Maildir\-feeds \-folder \e"$2\e""
+}
+
+mangareader() {
+    command 2000 "mangareader2json http://mangareader\.net/$1 | "\e
+        "maildir\-put \-root $HOME/Maildir\-feeds \-folder Entertainment"
+}
+
+rss http://xkcd\.com/atom\.xml Fun
+rss http://feeds\.feedburner\.com/smbc\-comics/PvLb Fun
+rss http://syndication\.thedailywtf\.com/TheDailyWtf Fun
+
+rss http://www\.reddit\.com/r/science/top/\.rss Geek
+rss http://www\.phoronix\.com/rss\.php Geek
+
+mangareader naruto
+mangareader bleach
+mangareader gantz
+
+rss https://github\.com/sloonz\.private\.atom?token=HIDDEN ""
+.
+.fi
+.
+.IP "" 0
+
