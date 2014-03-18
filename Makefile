@@ -9,6 +9,8 @@ MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
 GODIRS=ggs rss2json maildir-put ua-inline
 
+export GOPATH := $(PWD)/tmp-go:
+
 .PHONY: all clean doc
 
 all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline
@@ -18,17 +20,23 @@ doc:
 	for d in $(GODIRS) ; do test -f doc/$$d.md || ln -s ../$$d/README.md doc/$$d.md ; done
 	cd doc ; for f in *.md ; do ronn $$f ; done
 
-ggs/ggs: ggs/ggs.go
-	cd ggs; go build
+ggs/ggs: ggs/ggs.go tmp-go
+	cd ggs; go get -d && go build
 
-rss2json/rss2json: rss2json/rss2json.go
-	cd rss2json; go build
+rss2json/rss2json: rss2json/rss2json.go tmp-go
+	cd rss2json; go get -d && go build
 
-maildir-put/maildir-put: maildir-put/maildir-put.go maildir-put/cache.go
-	cd maildir-put; go build
+maildir-put/maildir-put: maildir-put/maildir-put.go maildir-put/cache.go tmp-go
+	cd maildir-put; go get -d && go build
 
-ua-inline/ua-inline: ua-inline/ua-inline.go
-	cd ua-inline; go build
+ua-inline/ua-inline: ua-inline/ua-inline.go tmp-go
+	cd ua-inline; go get -d && go build
+
+tmp-go:
+	mkdir tmp-go
+	mkdir tmp-go/bin
+	mkdir tmp-go/src
+	mkdir tmp-go/pkg
 
 install: all
 	install -d $(BINDIR)
@@ -47,3 +55,4 @@ install: all
 
 clean:
 	for f in $(GODIRS) ; do rm -f $$f/$$f ; done
+	rm -rf tmp-go
