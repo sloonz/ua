@@ -98,4 +98,8 @@ def scrap_ipb(url, user, password):
 import locale
 locale.setlocale(locale.LC_ALL, "C")
 
+if len(sys.argv) < 4 or "-h" in sys.argv or "--help" in sys.argv:
+	print("Usage: %s board-index-url username password" % sys.argv[0])
+	sys.exit(1)
+
 scraplib.main(scrap_ipb(sys.argv[1], sys.argv[2], sys.argv[3]))

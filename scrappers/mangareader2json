@@ -14,4 +14,8 @@ def scrap_mangareader(url):
 			"id": "mangareader:"+chapter("a").url()
 		}))
 
+if len(sys.argv) < 2 or "-h" in sys.argv or "--help" in sys.argv:
+	print("Usage: %s manga-index-url" % sys.argv[0])
+	sys.exit(1)
+
 scraplib.main(scrap_mangareader(sys.argv[1]))
