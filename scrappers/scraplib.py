@@ -82,17 +82,12 @@ class PyQueryWrapper(pyquery.PyQuery):
 
     def fetch(self, *args, **kwargs):
         """
-        Simple wrapper around fetch() that sets cookies and
-        referer according to the request used to retrieve current
-        document
+        Simple wrapper around fetch() that sets the referer according
+        to the request used to retrieve current document
         """
         if "headers" not in kwargs:
             kwargs["headers"] = {}
         kwargs["headers"]["Referer"] = self.base_url
-        if "cookies" not in kwargs:
-            kwargs["cookies"] = {}
-        for name, val in self.response.cookies.items():
-            kwargs["cookies"][name] = val
         return fetch(*args, **kwargs)
 
     @property
