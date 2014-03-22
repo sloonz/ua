@@ -43,6 +43,7 @@ install: all
 	for f in $(GODIRS) ; do install $$f/$$f $(BINDIR)/ ; done
 	install scrappers/mangareader2json $(BINDIR)/
 	install scrappers/ipboard2json $(BINDIR)/
+	install scrappers/medscape2json $(BINDIR)/
 	
 	test -n "$(PYTHONVER)" && install -d $(PYLIBDIR)
 	test -n "$(PYTHONVER)" && install scrappers/scraplib.py $(PYLIBDIR)/
