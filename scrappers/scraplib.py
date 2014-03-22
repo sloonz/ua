@@ -25,16 +25,23 @@ def wait(coroutines):
 def debug(msg):
     print(msg, file = sys.stderr)
 
-def open_cookies(cookie_file):
+def open_cookies(cookie_file = None):
     global cookie_jar
-    cookie_jar = http.cookiejar.MozillaCookieJar(os.path.expanduser(cookie_file))
-    load_cookies()
+    if cookie_file is None:
+        cookie_jar = http.cookiejar.CookieJar()
+    else:
+        cookie_jar = http.cookiejar.MozillaCookieJar(os.path.expanduser(cookie_file))
+        load_cookies()
 
 def load_cookies():
+    if not isinstance(cookie_jar, http.cookiejar.FileCookieJar):
+        return
     if os.path.exists(cookie_jar.filename) and os.stat(cookie_jar.filename).st_size > 0:
         cookie_jar.load()
 
 def save_cookies():
+    if not isinstance(cookie_jar, http.cookiejar.FileCookieJar):
+        return
     if not os.path.exists(cookie_jar.filename):
         parent_dir = os.path.dirname(cookie_jar.filename)
         if not os.path.exists(parent_dir):
