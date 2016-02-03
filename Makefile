@@ -9,7 +9,7 @@ MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
 GODIRS=ggs rss2json maildir-put ua-inline
 
-export GOPATH := $(PWD)/tmp-go:
+export GOPATH := $(PWD)/tmp-go
 
 .PHONY: all clean doc
 
