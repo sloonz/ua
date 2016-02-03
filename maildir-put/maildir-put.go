@@ -66,6 +66,11 @@ func (m *Message) Process(md *maildir.Maildir) error {
 	}
 
 	mail := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(m.Body))
+
+	// In a maildir, mails are expected to end with LF line endings. Most softwares are
+	// just fine with CRLF line endings, but some (for example Mutt) don’t.
+	mail.EOL = "\n"
+
 	mail.SetHeader("Date", m.Date)
 	mail.SetHeader("Subject", message.EncodeWord(m.Title))
 	mail.SetHeader("From", message.EncodeWord(m.Author)+" <"+m.AuthorEmail+">")
