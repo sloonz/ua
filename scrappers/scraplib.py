@@ -129,9 +129,9 @@ def fetch(url, method = "GET", **kwargs):
     kwargs["allow_redirects"] = False
     resp = yield from aiohttp.request(method, url, **kwargs)
     while resp.status // 100 == 3 and allow_redirects and max_redirects > 0:
-        headers = dict(resp.message.headers)
-        r_url = url_quote_unicode(headers.get('LOCATION') or headers.get('URI'))
+        r_url = url_quote_unicode(resp.headers.get('LOCATION') or resp.headers.get('URI'))
         url = urljoin(url, r_url)
+        resp.close()
         resp = yield from aiohttp.request(method, re.sub(r"#.*", "", url_quote_unicode(url)), **kwargs)
         max_redirects -= 1
         if max_redirects == 0:
