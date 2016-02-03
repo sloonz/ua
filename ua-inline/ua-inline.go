@@ -104,8 +104,9 @@ func ProcessMessage(msg Message, ch chan Message) {
 		}
 	}
 
-
 	attrRe := "\\s*[\"']?\\s*([^\\s\"'>]+)\\s*[\"']?"
+
+	// Inline <img>
 	body = regexp.MustCompile("<img[^>]+>").ReplaceAllStringFunc(body, func(img string) string {
 		src := regexp.MustCompile("src="+attrRe).FindStringSubmatch(img)
 		if len(src) > 1 && !strings.HasPrefix(src[1], "data:") {
@@ -115,6 +116,18 @@ func ProcessMessage(msg Message, ch chan Message) {
 			}
 		}
 		return img
+	})
+
+	// Inline <style src>
+	body = regexp.MustCompile("<style[^>]+>").ReplaceAllStringFunc(body, func(style string) string {
+		src := regexp.MustCompile("src="+attrRe).FindStringSubmatch(style)
+		if len(src) > 1 && !strings.HasPrefix(src[1], "data:") {
+			data := fetch(html.UnescapeString(src[1]), msgUrl)
+			if data != "" {
+				return strings.Replace(style, src[0], "src=\""+data+"\"", 1)
+			}
+		}
+		return style
 	})
 
 	msg["body"] = body
