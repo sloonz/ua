@@ -42,15 +42,17 @@ def scrap_page(doc):
 		entry(".post_body .signature").remove()
 		entry(".post_body .posted_info").remove()
 
+		post_body = entry(".post_body").html().replace("<blockquote", '<blockquote type="cite"')
+
 		body = '''
 			<div>
-			<div style="text-align:center;float:left;margin:10px;z-index:100;position:relative">
+			<div style="text-align:center;float:right;margin:10px;z-index:100;position:relative">
 			  %s<br><img src="%s"><br><a href="%s"">View post</a>
 			</div>
 			%s
 			<div style="clear:both"></div>
 			</div>
-		''' % (entry(".vcard").text(), entry(".ipsUserPhoto").url(), entry(".post_id a").url(), entry(".post_body").html())
+		''' % (entry(".vcard").text(), entry(".ipsUserPhoto").url(), entry(".post_id a").url(), post_body)
 
 		print(json.dumps({
 			"title": prefix + doc(".ipsType_pagetitle").text(),
