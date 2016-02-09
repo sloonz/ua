@@ -2,11 +2,9 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/sloonz/go-maildir"
 	"github.com/sloonz/go-mime-message"
 	"github.com/sloonz/go-qprintable"
@@ -31,10 +29,94 @@ type Message struct {
 	Host        string   `json:"host"`
 }
 
+func isDotAtomText(s string) bool {
+	pointAllowed := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+
+		// "." is allowed, but not in first position
+		// ".." is not allowed
+		if c == '.' && pointAllowed {
+			pointAllowed = false
+			continue
+		} else {
+			pointAllowed = true
+		}
+
+		if c >= 'a' && c <= 'z' {
+			continue
+		}
+		if c >= 'A' && c <= 'Z' {
+			continue
+		}
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		if c == '!' || c == '#' || c == '$' || c == '%' || c == '&' ||
+			c == '\'' || c == '*' || c == '+' || c == '-' || c == '/' ||
+			c == '=' || c == '?' || c == '^' || c == '_' || c == '`' ||
+			c == '{' || c == '|' || c == '}' || c == '~' {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
 func MessageId(id, host string) string {
-	idH := sha256.New()
-	idH.Write([]byte(id))
-	return fmt.Sprintf("<%x.maildir-put@%s>", idH.Sum(nil), host)
+	// According to RFC 2822:
+	// msg-id          =       [CFWS] "<" id-left "@" id-right ">" [CFWS]
+	// id-left         =       dot-atom-text / no-fold-quote
+	// id-right        =       dot-atom-text / no-fold-literal
+	idBuf := bytes.NewBufferString("<")
+
+	if isDotAtomText(id) {
+		idBuf.WriteString(id)
+	} else {
+		// Encode left part as no-fold-quote
+		// ASCII 9 (\t), 32 (space), 34 (dquote), 92 (backslash) are escaped with a backslash
+		// Non-ASCII and ASCII 0, 10 (\n), 13 (\r) are dropped
+		// Other characters are transmitted as-is
+		idBuf.WriteByte('"')
+		for i := 0; i < len(id); i++ {
+			if id[i] == 0 || id[i] == '\r' || id[i] == '\n' || id[i] > 127 {
+				// Drop it
+			} else if id[i] == '\t' || id[i] == ' ' || id[i] == '"' || id[i] == '\\' {
+				idBuf.Write([]byte{'\\', id[i]});
+			} else {
+				idBuf.WriteByte(id[i]);
+			}
+		}
+		idBuf.WriteByte('"')
+	}
+
+	idBuf.WriteByte('@')
+
+	if isDotAtomText(host) {
+		idBuf.WriteString(host)
+	} else {
+		// Encode right part as no-fold-literal
+		// ASCII 9 (\t), 32 (space), 91 ([), 92 (backslash) and 93 (]) are escaped with a backslash
+		// Non-ASCII and ASCII 0, 10 (\n), 13 (\r) are dropped
+		// Other characters are transmitted as-is
+		idBuf.WriteByte('[')
+		for i := 0; i < len(host); i++ {
+			if host[i] == 0 || host[i] == '\r' || host[i] == '\n' || host[i] > 127 {
+				// Drop it
+			} else if host[i] == '\t' || host[i] == ' ' || host[i] == '[' || host[i] == '\\' || host[i] == ']' {
+				idBuf.Write([]byte{'\\', host[i]});
+			} else {
+				idBuf.WriteByte(host[i]);
+			}
+		}
+		idBuf.WriteByte(']')
+	}
+
+	idBuf.WriteByte('>')
+
+	return idBuf.String()
 }
 
 func (m *Message) Process(md *maildir.Maildir) error {
