@@ -59,8 +59,8 @@ def scrap_page(doc):
 			"date": time.strftime("%d %b %Y %H:%M:%S %z", date),
 			"body": body,
 			"author": entry(".vcard").text(),
-			"id": "ipboard:"+sys.argv[1]+":"+(first_message and topic_id or post_id),
-			"references": ["ipboard:"+sys.argv[1]+":"+topic_id],
+			"id": "ua.ipboard."+(first_message and topic_id or post_id),
+			"references": ["ua.ipboard."+topic_id],
 			"url": doc.base_url,
 			"host": urllib.parse.urlsplit(doc.base_url).netloc
 		}))
