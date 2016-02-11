@@ -84,9 +84,9 @@ func MessageId(id, host string) string {
 			if id[i] == 0 || id[i] == '\r' || id[i] == '\n' || id[i] > 127 {
 				// Drop it
 			} else if id[i] == '\t' || id[i] == ' ' || id[i] == '"' || id[i] == '\\' {
-				idBuf.Write([]byte{'\\', id[i]});
+				idBuf.Write([]byte{'\\', id[i]})
 			} else {
-				idBuf.WriteByte(id[i]);
+				idBuf.WriteByte(id[i])
 			}
 		}
 		idBuf.WriteByte('"')
@@ -106,9 +106,9 @@ func MessageId(id, host string) string {
 			if host[i] == 0 || host[i] == '\r' || host[i] == '\n' || host[i] > 127 {
 				// Drop it
 			} else if host[i] == '\t' || host[i] == ' ' || host[i] == '[' || host[i] == '\\' || host[i] == ']' {
-				idBuf.Write([]byte{'\\', host[i]});
+				idBuf.Write([]byte{'\\', host[i]})
 			} else {
-				idBuf.WriteByte(host[i]);
+				idBuf.WriteByte(host[i])
 			}
 		}
 		idBuf.WriteByte(']')

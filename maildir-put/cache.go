@@ -1,16 +1,16 @@
 package main
 
 import (
-	"io"
-	"syscall"
-	"os"
 	"bufio"
+	"io"
+	"os"
+	"syscall"
 )
 
 type Cache struct {
-	data map[string]bool
+	data    map[string]bool
 	newData map[string]bool
-	path string
+	path    string
 }
 
 func OpenCache(path string) (c *Cache, err error) {
