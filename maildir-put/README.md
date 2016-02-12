@@ -9,11 +9,15 @@ inside a maildir. It also try to detect duplicates and drop them.
 
 Available arguments:
 
-* *-cache*: path to a cache file used to store message IDs for duplicate
+* `-cache`: path to a cache file used to store message IDs for duplicate
   detection
-* *-root*: path to the root maildir directory. Defaults to ~/Maildir.
-* *-folder*: maildir folder to put messages. Defaults to "", the inbox.
+* `-root`: path to the root maildir directory. Defaults to ~/Maildir.
+* `-folder`: maildir folder to put messages. Defaults to "", the inbox.
   The folder separator is "/".
+* `-redis`: specify this flag to use redis for message IDs cache. If both
+  `-redis` and `-cache` are specified, the given cache will be migrated to
+	redis
+* `-redis-db`, `-redis-addr`, `-redis-password`: redis connection settings.
 
 ## Installation
 

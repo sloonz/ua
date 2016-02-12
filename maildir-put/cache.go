@@ -2,67 +2,97 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
+	"gopkg.in/redis.v3"
 	"io"
+	"log"
 	"os"
 	"syscall"
+	"time"
 )
 
 type Cache struct {
-	data    map[string]bool
-	newData map[string]bool
-	path    string
+	data         map[string]bool
+	newData      map[string]bool
+	ts           []byte
+	path         string
+	useRedis     bool
+	redisClient  *redis.Client
+	redisOptions redis.Options
 }
 
-func OpenCache(path string) (c *Cache, err error) {
+func (c *Cache) OpenCache() (err error) {
 	var key string
 
-	c = &Cache{make(map[string]bool), make(map[string]bool), path}
+	c.data = make(map[string]bool)
+	c.newData = make(map[string]bool)
+	c.ts = make([]byte, 8)
+
+	binary.PutVarint(c.ts, time.Now().Unix())
+
+	if c.useRedis {
+		c.redisClient = redis.NewClient(&c.redisOptions)
+	}
 
 	cacheFile, err := os.Open(c.path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = nil
-		} else {
-			c = nil
-		}
-		return
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	} else if os.IsNotExist(err) {
+		return nil
 	}
 
 	reader := bufio.NewReader(cacheFile)
 	for err != io.EOF {
 		if key, err = reader.ReadString('\n'); err != nil && err != io.EOF {
-			c = nil
-			return
+			return err
 		}
-		if key != "" {
-			c.data[key[:len(key)-1]] = true
+		if key != "" && key != "" {
+			key = key[:len(key)-1]
+			c.data[key] = true
+			if c.useRedis {
+				c.Getset(key)
+			}
 		}
 	}
 
-	err = nil
-	return
-}
-
-func (c *Cache) Set(key string) {
-	c.newData[key] = true
-}
-
-func (c *Cache) Get(key string) bool {
-	_, has := c.data[key]
-	if !has {
-		_, has = c.newData[key]
+	if c.useRedis {
+		os.Remove(c.path)
 	}
-	return has
+
+	return nil
+}
+
+func (c *Cache) Getset(key string) bool {
+	if c.useRedis {
+		res := c.redisClient.GetSet(key, c.ts)
+		if res.Err() != nil && res.Err() != redis.Nil {
+			log.Fatalf("Error using redis cache: %s", res.Err())
+		}
+		return res.Err() != redis.Nil
+	} else {
+		if _, has := c.data[key]; has {
+			return true
+		}
+		if _, has := c.newData[key]; has {
+			return true
+		}
+		c.newData[key] = true
+	}
+	return false
 }
 
 func (c *Cache) Dump() error {
+	if c.useRedis {
+		return nil
+	}
+
 	cacheFile, err := os.OpenFile(c.path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
 	defer cacheFile.Close()
 
-	if err = syscall.Flock(int(cacheFile.Fd()), 2); err != nil {
+	if err = syscall.Flock(int(cacheFile.Fd()), syscall.LOCK_EX); err != nil {
 		return err
 	}
 

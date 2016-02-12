@@ -16,7 +16,7 @@ import (
 )
 
 var hostname string
-var cache *Cache
+var cache Cache
 
 type Message struct {
 	Id          string   `json:"id"`
@@ -140,10 +140,8 @@ func (m *Message) Process(md *maildir.Maildir) error {
 
 	if m.Id != "" {
 		id = MessageId(m.Id, m.Host)
-		if cache.Get(id) {
+		if cache.Getset(id) {
 			return nil
-		} else {
-			cache.Set(id)
 		}
 	}
 
@@ -174,41 +172,41 @@ func (m *Message) Process(md *maildir.Maildir) error {
 }
 
 func main() {
-	var rootDir, folder, cacheFile string
+	var rootDir, folder string
 	var err error
 
 	flag.StringVar(&rootDir, "root", os.ExpandEnv("$HOME/Maildir"), "path to maildir")
-	flag.StringVar(&folder, "folder", "", "maildir folder name to put email (empty for inbox")
-	flag.StringVar(&cacheFile, "cache", os.ExpandEnv("$HOME/.cache/maildir-put.cache"),
+	flag.StringVar(&folder, "folder", "", "maildir folder name to put email (empty for inbox)")
+	flag.StringVar(&cache.path, "cache", os.ExpandEnv("$HOME/.cache/maildir-put.cache"),
 		"path to store message-ids to drop duplicate messages")
+	flag.BoolVar(&cache.useRedis, "redis", false, "use redis for cache storage")
+	flag.StringVar(&cache.redisOptions.Addr, "redis-addr", "127.0.0.1:6379", "redis address")
+	flag.Int64Var(&cache.redisOptions.DB, "redis-db", 0, "redis base")
+	flag.StringVar(&cache.redisOptions.Password, "redis-password", "", "redis password")
 
 	if flag.Parse(); !flag.Parsed() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	if cache, err = OpenCache(cacheFile); err != nil {
-		log.Printf("Can't open cache: %s", err.Error())
-		os.Exit(1)
+	if err = cache.OpenCache(); err != nil {
+		log.Fatalf("Can't open cache: %s", err.Error())
 	}
 
 	if hostname, err = os.Hostname(); err != nil {
-		log.Print("Can't get hostname: %s", err.Error())
-		os.Exit(1)
+		log.Fatalf("Can't get hostname: %s", err.Error())
 	}
 
 	md, err := maildir.New(rootDir, true)
 	if err != nil {
-		log.Print("Can't open maildir: %s", err.Error())
-		os.Exit(1)
+		log.Fatalf("Can't open maildir: %s", err.Error())
 	}
 
 	for _, subfolder := range strings.Split(folder, "/") {
 		if subfolder != "" {
 			md, err = md.Child(subfolder, true)
 			if err != nil {
-				log.Print("Can't open maildir: %s", err.Error())
-				os.Exit(1)
+				log.Fatalf("Can't open maildir: %s", err.Error())
 			}
 		}
 	}
