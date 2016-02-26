@@ -6,6 +6,19 @@ import urlparse
 import time
 import scrapy
 
+class EdxCourse:
+    def __init__(self, data):
+        self.data = data
+
+    def parse_description(self, response):
+        def do_parse(response):
+            self.data["body"] += json.loads(response.body)["description"]
+            print json.dumps(self.data)
+
+        yield scrapy.Request("https://www.edx.org/api/catalog/v2/courses/%s" % response.css('main ::attr(data-course-id)').extract()[0],
+                callback=do_parse)
+
+
 class EdxCourses(scrapy.Spider):
     name = "edx-courses"
     start_urls = ["https://www.edx.org/search/api/all"]
@@ -16,21 +29,15 @@ class EdxCourses(scrapy.Spider):
                 continue
             if u"profed" in course["types"]:
                 continue
-            
-            yield scrapy.Request(course["url"],
-                    callback=lambda r:self.parse_course(r, course))
-    
-    def parse_course(self, response, summary):
-        def do_parse(response):
-            body = u"<p>%s — %s (%s)</p>" % (summary["code"], summary["l"], summary["start"])
-            body += u'<p><img src="%s"></p>' % (urlparse.urljoin(self.start_urls[0], summary["image"]["src"]),)
-            body += json.loads(response.body)["description"]
 
-            print json.dumps({
-                "url": summary["url"],
-                "title": u"%s %s" % (u" ".join("[%s]"%_ for _ in summary["schools"]), summary["l"]),
+            body = u'<p><a href="%s">%s — %s</a> (%s)</p>' % (course["url"], course["code"], course["l"], course["start"])
+            body += u'<p><a href="%s"><img src="%s"></a></p>' % (course["url"], urlparse.urljoin(self.start_urls[0], course["image"]["src"]))
+
+            course_item = EdxCourse({
+                "url": course["url"],
+                "title": u"%s %s" % (u" ".join("[%s]"%_ for _ in course["schools"]), course["l"]),
+                "id": u"%s.%s.edx" % (course["l"], u".".join(course["schools"])),
                 "body": body
             })
-
-        yield scrapy.Request("https://www.edx.org/api/catalog/v2/courses/%s" % response.css('main ::attr(data-course-id)').extract()[0],
-                callback=do_parse)
+            
+            yield scrapy.Request(course["url"], callback=course_item.parse_description)
