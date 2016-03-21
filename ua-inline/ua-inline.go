@@ -25,11 +25,19 @@ type Message map[string]interface{}
 
 var CacheDir string
 
-func fetch(resUrlString string, baseUrl *url.URL) string {
+func hash(name string) string {
+	h := sha256.New()
+	h.Write([]byte(name))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func fetch(resUrlString string, baseUrl *url.URL) (data []byte, contentType string) {
+	var err error
+
 	// Resolve relative url
 	resUrl, _ := url.Parse(resUrlString)
 	if resUrl == nil || (baseUrl == nil && !resUrl.IsAbs()) {
-		return ""
+		return nil, ""
 	}
 
 	if !resUrl.IsAbs() {
@@ -37,14 +45,19 @@ func fetch(resUrlString string, baseUrl *url.URL) string {
 	}
 
 	// Test cache
-	h := sha256.New()
-	h.Write([]byte(resUrl.String()))
-	cacheFile := fmt.Sprintf("%s/%x@%s", CacheDir, h.Sum(nil), resUrl.Host)
-	data, err := ioutil.ReadFile(cacheFile)
+	h := hash(resUrl.String())
+	dataCacheFile := fmt.Sprintf("%s/data-%x@%s", CacheDir, h, resUrl.Host)
+	typeCacheFile := fmt.Sprintf("%s/type-%x@%s", CacheDir, h, resUrl.Host)
+	data, err = ioutil.ReadFile(dataCacheFile)
 	if err == nil {
-		return string(data)
+		var bContentType []byte
+		bContentType, err = ioutil.ReadFile(typeCacheFile)
+		contentType = string(bContentType)
+	}
+	if err == nil {
+		return
 	} else if !os.IsNotExist(err) {
-		log.Printf("Can't read cache file %s: %s", cacheFile, err.Error())
+		log.Printf("Can't read cache file %s or %s: %s", dataCacheFile, typeCacheFile, err.Error())
 	}
 
 	// Cache miss
@@ -55,34 +68,32 @@ func fetch(resUrlString string, baseUrl *url.URL) string {
 		} else {
 			log.Printf("Error downloading %s: %s", resUrl.String(), resp.Status)
 		}
-		return ""
+		return nil, ""
 	}
 
 	data, err = ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 	if err != nil {
 		log.Printf("Error downloading %s: %s", resUrl.String(), err.Error())
-		return ""
+		return nil, ""
 	}
 
-	// Transform to data: URI scheme
-	var mimetype string
+	// Get type
 	if _, ok := resp.Header["Content-Type"]; ok {
-		mimetype = resp.Header["Content-Type"][0]
+		contentType = resp.Header["Content-Type"][0]
 	} else {
-		mimetype = http.DetectContentType(data)
+		contentType = http.DetectContentType(data)
 	}
-	if strings.Contains(mimetype, ";") {
-		mimetype = mimetype[:strings.Index(mimetype, ";")]
-	}
-	data = []byte(fmt.Sprintf("data:%s;base64,%s", mimetype, base64.StdEncoding.EncodeToString(data)))
 
 	// Write to cache
-	if err = ioutil.WriteFile(cacheFile, data, os.FileMode(0644)); err != nil {
-		log.Printf("Can't write cache file %s: %s", cacheFile, err.Error())
+	if err = ioutil.WriteFile(dataCacheFile, data, os.FileMode(0644)); err != nil {
+		log.Printf("Can't write cache file %s: %s", dataCacheFile, err.Error())
+	}
+	if err = ioutil.WriteFile(typeCacheFile, []byte(contentType), os.FileMode(0644)); err != nil {
+		log.Printf("Can't write cache file %s: %s", typeCacheFile, err.Error())
 	}
 
-	return string(data)
+	return
 }
 
 func ProcessMessage(msg Message, ch chan Message) {
@@ -104,15 +115,26 @@ func ProcessMessage(msg Message, ch chan Message) {
 		}
 	}
 
+	var attachments []map[string]string
 	attrRe := "\\s*[\"']?\\s*([^\\s\"'>]+)\\s*[\"']?"
 
-	// Inline <img>
+	// Inline <img> as attachment
 	body = regexp.MustCompile("<img[^>]+>").ReplaceAllStringFunc(body, func(img string) string {
 		src := regexp.MustCompile("src="+attrRe).FindStringSubmatch(img)
 		if len(src) > 1 && !strings.HasPrefix(src[1], "data:") {
-			data := fetch(html.UnescapeString(src[1]), msgUrl)
-			if data != "" {
-				return strings.Replace(img, src[0], "src=\""+data+"\"", 1)
+			cid := hash(src[1])
+			filename := regexp.MustCompile("/([^/?]+)(\\?|$)").FindStringSubmatch(src[1])
+			data, mimeType := fetch(html.UnescapeString(src[1]), msgUrl)
+			if data != nil {
+				attachment := map[string]string {
+					"cid": cid,
+					"mimeType": mimeType,
+					"data": base64.StdEncoding.EncodeToString(data)}
+				if filename != nil {
+					attachment["filename"] = filename[1]
+				}
+				attachments = append(attachments, attachment)
+				return strings.Replace(img, src[0], fmt.Sprintf("src=\"cid:%s\"", cid), 1)
 			}
 		}
 		return img
@@ -122,15 +144,20 @@ func ProcessMessage(msg Message, ch chan Message) {
 	body = regexp.MustCompile("<style[^>]+>").ReplaceAllStringFunc(body, func(style string) string {
 		src := regexp.MustCompile("src="+attrRe).FindStringSubmatch(style)
 		if len(src) > 1 && !strings.HasPrefix(src[1], "data:") {
-			data := fetch(html.UnescapeString(src[1]), msgUrl)
-			if data != "" {
-				return strings.Replace(style, src[0], "src=\""+data+"\"", 1)
+			data, mimeType := fetch(html.UnescapeString(src[1]), msgUrl)
+			if data != nil {
+				newSrc := fmt.Sprintf("src=\"data:%s;base64,%s\"", mimeType, base64.StdEncoding.EncodeToString(data))
+				return strings.Replace(style, src[0], newSrc, 1)
 			}
 		}
 		return style
 	})
 
 	msg["body"] = body
+
+	if attachments != nil {
+		msg["attachments"] = attachments
+	}
 
 	ch <- msg
 }
