@@ -7,13 +7,13 @@ PYLIBDIR=$(DESTDIR)$(PREFIX)/lib/python$(PYTHONVER)/site-packages
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
-GODIRS=ggs rss2json maildir-put ua-inline
+GODIRS=ggs rss2json maildir-put ua-inline ua-proxify
 
 export GOPATH ?= $(PWD)/tmp-go
 
 .PHONY: all clean doc
 
-all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline
+all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify
 doc:
 	test -d doc || mkdir doc
 	test -f doc/ua.md || ln -s ../README.md doc/ua.md
@@ -31,6 +31,9 @@ maildir-put/maildir-put: maildir-put/maildir-put.go maildir-put/cache.go $(GOPAT
 
 ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
 	cd ua-inline; go get -d && go build
+
+ua-proxify/ua-proxify: ua-proxify/ua-proxify.go $(GOPATH)
+	cd ua-proxify; go get -d && go build
 
 $(GOPATH):
 	mkdir $(GOPATH)
