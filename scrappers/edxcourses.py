@@ -5,6 +5,7 @@ import json
 import urlparse
 import time
 import scrapy
+import email.utils
 
 class EdxCourse:
     def __init__(self, data):
@@ -37,6 +38,7 @@ class EdxCourses(scrapy.Spider):
                 "url": course["url"],
                 "title": u"%s %s" % (u" ".join("[%s]"%_ for _ in course["schools"]), course["l"]),
                 "id": u"%s.%s.edx" % (course["l"], u".".join(course["schools"])),
+                "date": email.utils.formatdate(course["start_time"]),
                 "body": body
             })
             
