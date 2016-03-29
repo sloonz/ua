@@ -23,9 +23,6 @@ type Config struct {
 	Commands []*Command
 }
 
-var config Config
-var ch chan *Command
-
 const CONFIG_WRAPPER = `
 workers=5
 default_timeout=0
@@ -51,7 +48,7 @@ source %s
 echo '{"Workers":'$workers',"Commands":['$commands']}'
 `
 
-func readConfig() error {
+func readConfig() (cfg *Config, err error) {
 	var cfgFile string
 
 	if len(os.Args) > 1 {
@@ -65,20 +62,23 @@ func readConfig() error {
 	sp.Stdin = bytes.NewBuffer([]byte(fmt.Sprintf(CONFIG_WRAPPER, cfgFile)))
 	out, err := sp.Output()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = json.Unmarshal(out, &config)
+	cfg = new(Config)
+	err = json.Unmarshal(out, cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return cfg, nil
 }
 
-func process(cmd *Command) {
+func process(ch chan *Command) {
 	var timer *time.Timer
 	var err error
+
+	cmd := <-ch
 
 	log.Print(cmd.Command)
 	sp := exec.Command("sh", "-c", cmd.Command)
@@ -110,23 +110,23 @@ scheduleNextLaunch:
 	})
 }
 
-func worker() {
+func worker(ch chan *Command) {
 	for {
-		process(<-ch)
+		process(ch)
 	}
 }
 
 func main() {
-	err := readConfig()
+	config, err := readConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while reading configuration: %s", err)
 		os.Exit(1)
 	}
 
-	ch = make(chan *Command, len(config.Commands))
+	ch := make(chan *Command, len(config.Commands))
 
 	for i := 0; i < config.Workers; i++ {
-		go worker()
+		go worker(ch)
 	}
 
 	for _, cmd := range config.Commands {
