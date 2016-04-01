@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -21,6 +22,7 @@ type Command struct {
 type Config struct {
 	Workers  int
 	Commands []*Command
+	disabled bool
 }
 
 const CONFIG_WRAPPER = `
@@ -74,11 +76,9 @@ func readConfig() (cfg *Config, err error) {
 	return cfg, nil
 }
 
-func process(ch chan *Command) {
+func process(cmd *Command) {
 	var timer *time.Timer
 	var err error
-
-	cmd := <-ch
 
 	log.Print(cmd.Command)
 	sp := exec.Command("sh", "-c", cmd.Command)
@@ -86,7 +86,7 @@ func process(ch chan *Command) {
 	sp.Stderr = os.Stderr
 	if err = sp.Start(); err != nil {
 		log.Printf("%s failed: %s", err.Error(), cmd.Command)
-		goto scheduleNextLaunch
+		return
 	}
 	if cmd.Timeout > 0 {
 		timer = time.AfterFunc(time.Duration(cmd.Timeout)*time.Second, func() {
@@ -103,38 +103,69 @@ func process(ch chan *Command) {
 	if err != nil {
 		log.Printf("%s failed: %s", err.Error(), cmd.Command)
 	}
-
-scheduleNextLaunch:
-	time.AfterFunc(time.Duration(cmd.Delay)*time.Second, func() {
-		ch <- cmd
-	})
 }
 
-func worker(ch chan *Command) {
-	for {
-		process(ch)
-	}
-}
+func reload(oldConfig *Config) (config *Config, err error) {
+	var wg sync.WaitGroup
+	var once sync.Once
 
-func main() {
-	config, err := readConfig()
+	config, err = readConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while reading configuration: %s", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	ch := make(chan *Command, len(config.Commands))
 
 	for i := 0; i < config.Workers; i++ {
-		go worker(ch)
+		go func() {
+			wg.Add(1)
+
+			for !config.disabled {
+				cmd := <-ch
+				process(cmd)
+				wg.Add(1)
+				time.AfterFunc(time.Duration(cmd.Delay)*time.Second, func() {
+					ch <- cmd
+					wg.Done()
+				})
+			}
+
+			wg.Done()
+			wg.Wait()
+			once.Do(func() { close(ch) })
+		}()
 	}
 
 	for _, cmd := range config.Commands {
 		ch <- cmd
 	}
 
-	// wait for SIGINT
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, syscall.SIGINT)
-	<-sigChan
+	if oldConfig != nil {
+		oldConfig.disabled = true
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := reload(nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error while reading configuration: %s", err)
+		os.Exit(1)
+	}
+
+	// wait for signals (interrupt, reload)
+	sigChan := make(chan os.Signal, 2)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGUSR1)
+	for sig := range sigChan {
+		switch sig {
+		case syscall.SIGINT:
+			return
+		case syscall.SIGUSR1:
+			config, err = reload(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error while reloading configuration: %s", err)
+			}
+		}
+	}
 }
