@@ -28,26 +28,20 @@ type Config struct {
 const CONFIG_WRAPPER = `
 workers=5
 default_timeout=0
-
-commands=
-
-jsonString() {
-	perl -pe 's/\\/\\\\/g;s/"/\\"/g'
-}
+commands=$(jq -n '[]')
 
 command() {
-	if [ "$commands" != "" ] ; then
-		commands="$commands,"
-	fi
-	delay=$1;shift
-	timeout=${timeout:-$default_timeout}
-	commands=$commands'{"Delay":'$delay',"Command":"'$(echo $@|jsonString)'","Timeout":'$timeout'}'
-	timeout=
+    delay=$1; shift
+    commands=$(echo "$commands" | \
+        jq --arg delay "$delay" --arg cmd "$*" \
+           --arg timeout "${timeout:-$default_timeout}" \
+           '. + [{Timeout: ($timeout|tonumber), Delay: ($delay|tonumber), Command: $cmd}]')
+    timeout=
 }
 
-source %s
+. %s
 
-echo '{"Workers":'$workers',"Commands":['$commands']}'
+echo "$commands" | jq --arg workers "$workers" '{Workers: ($workers|tonumber), Commands: .}'
 `
 
 func readConfig() (cfg *Config, err error) {

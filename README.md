@@ -21,6 +21,7 @@ them in a maildir
 
 * Go
 * libxml
+* [jq](https://stedolan.github.io/jq/)
 * For additional scrappers: python 3, aiohttp and pyquery
 
 ## Installation
