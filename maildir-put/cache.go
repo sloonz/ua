@@ -9,6 +9,7 @@ import (
 	"os"
 	"syscall"
 	"time"
+	"bytes"
 )
 
 type Cache struct {
@@ -24,11 +25,12 @@ type Cache struct {
 func (c *Cache) OpenCache() (err error) {
 	var key string
 
+	tsBuf := bytes.NewBuffer(nil)
+	binary.Write(tsBuf, binary.BigEndian, time.Now().Unix())
+
 	c.data = make(map[string]bool)
 	c.newData = make(map[string]bool)
-	c.ts = make([]byte, 8)
-
-	binary.PutVarint(c.ts, time.Now().Unix())
+	c.ts = tsBuf.Bytes()
 
 	if c.useRedis {
 		c.redisClient = redis.NewClient(&c.redisOptions)
@@ -49,34 +51,35 @@ func (c *Cache) OpenCache() (err error) {
 		if key != "" && key != "" {
 			key = key[:len(key)-1]
 			c.data[key] = true
-			if c.useRedis {
-				c.Getset(key)
-			}
 		}
-	}
-
-	if c.useRedis {
-		os.Remove(c.path)
 	}
 
 	return nil
 }
 
-func (c *Cache) Getset(key string) bool {
+func (c *Cache) Getset(id, host, msgId string) bool {
 	if c.useRedis {
-		res := c.redisClient.GetSet(key, c.ts)
+		res := c.redisClient.HExists("ua:"+host, id)
 		if res.Err() != nil && res.Err() != redis.Nil {
 			log.Fatalf("Error using redis cache: %s", res.Err())
 		}
-		return res.Err() != redis.Nil
+
+		present := res.Val()
+
+		res = c.redisClient.HSet("ua:"+host, id, string(c.ts))
+		if res.Err() != nil && res.Err() != redis.Nil {
+			log.Fatalf("Error using redis cache: %s", res.Err())
+		}
+
+		return present
 	} else {
-		if _, has := c.data[key]; has {
+		if _, has := c.data[msgId]; has {
 			return true
 		}
-		if _, has := c.newData[key]; has {
+		if _, has := c.newData[msgId]; has {
 			return true
 		}
-		c.newData[key] = true
+		c.newData[msgId] = true
 	}
 	return false
 }

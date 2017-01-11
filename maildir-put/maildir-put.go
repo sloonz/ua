@@ -159,7 +159,7 @@ func (m *Message) Process(md *maildir.Maildir) error {
 
 	if m.Id != "" {
 		id = MessageId(m.Id, m.Host)
-		if cache.Getset(id) {
+		if cache.Getset(m.Id, m.Host, id) {
 			return nil
 		}
 	}
