@@ -31,13 +31,18 @@ class EdxCourses(scrapy.Spider):
             if u"profed" in course["types"]:
                 continue
 
+            if course['pace']:
+                session = 'selfpaced'
+            else:
+                session = course.get('start_time')
+
             body = u'<p><a href="%s">%s — %s</a> (%s)</p>' % (course["url"], course["code"], course["l"], course["start"])
             body += u'<p><a href="%s"><img src="%s"></a></p>' % (course["url"], urlparse.urljoin(self.start_urls[0], course["image"]["src"]))
 
             course_item = EdxCourse({
                 "url": course["url"],
                 "title": u"%s %s" % (u" ".join("[%s]"%_ for _ in course["schools"]), course["l"]),
-                "id": u"%s.%s.edx" % (course["l"], u".".join(course["schools"])),
+                "id": u"%s.%s.%s.edx" % (course["l"], u".".join(course["schools"]), session),
                 "date": email.utils.formatdate(course["start_time"]),
                 "body": body
             })
