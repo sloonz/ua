@@ -74,29 +74,28 @@ func process(cmd *Command) {
 	var timer *time.Timer
 	var err error
 
-	log.Print(cmd.Command)
 	sp := exec.Command("sh", "-c", cmd.Command)
+	sp.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	sp.Stdout = os.Stdout
 	sp.Stderr = os.Stderr
 	if err = sp.Start(); err != nil {
 		log.Printf("%s failed: %s", err.Error(), cmd.Command)
 		return
 	}
+	log.Printf("(%d) %s", sp.Process.Pid, cmd.Command)
 	if cmd.Timeout > 0 {
 		timer = time.AfterFunc(time.Duration(cmd.Timeout)*time.Second, func() {
-			timer = nil
 			if sp.ProcessState == nil {
-				sp.Process.Kill()
+				syscall.Kill(-sp.Process.Pid, syscall.SIGTERM)
 			}
 		})
 	}
-	err = sp.Wait()
-	if timer != nil {
-		timer.Stop()
+	if err = sp.Wait(); err != nil {
+		log.Printf("(%d) %s failed: %s", sp.Process.Pid, cmd.Command, err.Error())
+	} else {
+		log.Printf("(%d) done", sp.Process.Pid)
 	}
-	if err != nil {
-		log.Printf("%s failed: %s", err.Error(), cmd.Command)
-	}
+	timer.Stop()
 }
 
 func reload(oldConfig *Config) (config *Config, err error) {
