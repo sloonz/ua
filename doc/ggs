@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GGS" "" "March 2014" "" ""
+.TH "GGS" "" "February 2017" "" ""
 \fBGGS\fR (Grey Goo Spawner) is a simple software that runs jobs periodically\. It is similar with cron, but with some differences :
 .
 .IP "\(bu" 4
@@ -16,10 +16,17 @@ You can define a timeout for your jobs, too\.
 .IP "" 0
 .
 .SH "Usage"
-\fBggs [configuration file]\fR
+\fBggs [options] [configuration file]\fR
 .
 .P
 If no configuration file is provided, \fBggs\fR will use \fB~/\.config/ggsrc\fR by default\.
+.
+.SH "Requirements"
+.
+.IP "\(bu" 4
+jq \fIhttps://stedolan\.github\.io/jq/\fR
+.
+.IP "" 0
 .
 .SH "Installation"
 \fBgo build ggs\.go && cp ggs /usr/local/bin\fR

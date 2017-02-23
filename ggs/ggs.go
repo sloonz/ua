@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -44,15 +45,7 @@ command() {
 echo "$commands" | jq --arg workers "$workers" '{Workers: ($workers|tonumber), Commands: .}'
 `
 
-func readConfig() (cfg *Config, err error) {
-	var cfgFile string
-
-	if len(os.Args) > 1 {
-		cfgFile = os.Args[1]
-	} else {
-		cfgFile = os.ExpandEnv("$HOME/.config/ggsrc")
-	}
-
+func readConfig(cfgFile string) (cfg *Config, err error) {
 	sp := exec.Command("sh")
 	sp.Stderr = os.Stderr
 	sp.Stdin = bytes.NewBuffer([]byte(fmt.Sprintf(CONFIG_WRAPPER, cfgFile)))
@@ -98,11 +91,17 @@ func process(cmd *Command) {
 	timer.Stop()
 }
 
-func reload(oldConfig *Config) (config *Config, err error) {
-	var wg sync.WaitGroup
-	var once sync.Once
+func reload(cfgFile string, oldConfig *Config, runOnce bool) (config *Config, err error) {
+	// loopGroup is the number of (pending) writers on the command channel.
+	// After disabling a configuration, we have to wait for it to fall to 0 before
+	// closing the channel (otherwise, they will write to the closed channel).
+	//
+	// onceGroup is the number of unprocessed commands in the initial batch.
+	var loopGroup, onceGroup sync.WaitGroup
 
-	config, err = readConfig()
+	var closeChannel sync.Once
+
+	config, err = readConfig(cfgFile)
 	if err != nil {
 		return nil, err
 	}
@@ -111,26 +110,42 @@ func reload(oldConfig *Config) (config *Config, err error) {
 
 	for i := 0; i < config.Workers; i++ {
 		go func() {
-			wg.Add(1)
-
+			var cmd *Command
 			for !config.disabled {
-				cmd := <-ch
+				if cmd = <-ch; cmd == nil {
+					continue
+				}
+
 				process(cmd)
-				wg.Add(1)
-				time.AfterFunc(time.Duration(cmd.Delay)*time.Second, func() {
-					ch <- cmd
-					wg.Done()
-				})
+
+				if runOnce {
+					onceGroup.Done()
+				} else {
+					loopGroup.Add(1)
+					time.AfterFunc(time.Duration(cmd.Delay)*time.Second, func() {
+						if !config.disabled {
+							ch <- cmd
+						}
+						loopGroup.Done()
+					})
+				}
 			}
 
-			wg.Done()
-			wg.Wait()
-			once.Do(func() { close(ch) })
+			loopGroup.Wait()
+			closeChannel.Do(func() { close(ch) })
 		}()
 	}
 
 	for _, cmd := range config.Commands {
 		ch <- cmd
+		if runOnce {
+			onceGroup.Add(1)
+		}
+	}
+
+	if runOnce {
+		onceGroup.Wait()
+		os.Exit(0)
 	}
 
 	if oldConfig != nil {
@@ -141,7 +156,17 @@ func reload(oldConfig *Config) (config *Config, err error) {
 }
 
 func main() {
-	config, err := reload(nil)
+	var runOnce bool
+	var cfgFile string
+
+	flag.BoolVar(&runOnce, "once", false, "Process commands once, and then exit")
+	flag.Parse()
+
+	if cfgFile = flag.Arg(0); cfgFile == "" {
+		cfgFile = os.ExpandEnv("$HOME/.config/ggsrc")
+	}
+
+	config, err := reload(cfgFile, nil, runOnce)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while reading configuration: %s", err)
 		os.Exit(1)
@@ -155,7 +180,7 @@ func main() {
 		case syscall.SIGINT:
 			return
 		case syscall.SIGUSR1:
-			config, err = reload(config)
+			config, err = reload(cfgFile, config, runOnce)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error while reloading configuration: %s", err)
 			}

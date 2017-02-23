@@ -15,10 +15,14 @@ jobs .
 
 ## Usage
 
-`ggs [configuration file]`
+`ggs [options] [configuration file]`
 
 If no configuration file is provided, `ggs` will use `~/.config/ggsrc`
 by default.
+
+## Requirements
+
+* [jq](https://stedolan.github.io/jq/)
 
 ## Installation
 
