@@ -110,8 +110,8 @@ func reload(cfgFile string, oldConfig *Config, runOnce bool) (config *Config, er
 
 	for i := 0; i < config.Workers; i++ {
 		go func() {
-			var cmd *Command
 			for !config.disabled {
+				var cmd *Command
 				if cmd = <-ch; cmd == nil {
 					continue
 				}
