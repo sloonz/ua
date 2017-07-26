@@ -1,5 +1,3 @@
-#!/usr/bin/node
-
 const cloudscraper = require('cloudscraper');
 const cheerio = require('cheerio');
 const process = require('process');

@@ -1,6 +1,0 @@
-{
-  "devDependencies": {
-    "cheerio": "^0.22.0",
-    "cloudscraper": "^1.4.1"
-  }
-}

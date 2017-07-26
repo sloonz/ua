@@ -57,6 +57,7 @@
     <a href="#Dependencies">Dependencies</a>
     <a href="#Installation">Installation</a>
     <a href="#Configuration">Configuration</a>
+    <a href="#Weboob-compatibility">Weboob compatibility</a>
   </div>
 
   <ol class='man-decor man-head man head'>
@@ -76,9 +77,9 @@ description in their respective folder.</p>
 them in a maildir</li>
 <li><code>rss2json</code> transforms any RSS/Atom feed into a set of messages that
 <code>maildir-put</code> can process</li>
-<li>You can write your own producers for maildir-put ; an example for the
-<a href="http://mangareader.net">mangareader</a> service is provided.</li>
-<li>You can also put filters, like <code>ua-inline</code></li>
+<li>You can write your own producers (scrapers) for maildir-put ; some are
+already provided in the <code>scrapers/</code> directory.</li>
+<li>You can also put filters, like <code>ua-inline</code> or <code>ua-proxify</code>.</li>
 </ul>
 
 
@@ -93,7 +94,7 @@ them in a maildir</li>
 <li>Go</li>
 <li>libxml</li>
 <li><a href="https://stedolan.github.io/jq/">jq</a></li>
-<li>For additional scrappers: python 3, aiohttp and pyquery</li>
+<li>For additional scrapers: scrapy, python 3 and nodejs</li>
 </ul>
 
 
@@ -116,7 +117,7 @@ rss() {
 }
 
 mangareader() {
-    command 2000 "mangareader2json http://mangareader.net/$1 | "\
+    command 2000 "ua-scraper-mangareader -a name=$1 | "\
         "maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
 }
 
@@ -134,10 +135,18 @@ mangareader gantz
 rss https://github.com/sloonz.private.atom?token=HIDDEN ""
 </code></pre>
 
+<h2 id="Weboob-compatibility">Weboob compatibility</h2>
+
+<p>You can use <a href="http://weboob.org/">weboob</a> modules used by
+<a href="http://weboob.org/applications/boobmsg">boobmsg</a> to generate
+messages. Configure the modules using <code>boobmsg</code>, and use <code>weboobmsg2json
+[module-name]</code> to generate messages. <code>[module-name]</code> can be found in
+<code>~/.config/weboob/backends</code>.</p>
+
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>April 2016</li>
+    <li class='tc'>July 2017</li>
     <li class='tr'>ua</li>
   </ol>
 

@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import scrapy
 import json
 import urllib.parse
@@ -43,3 +45,20 @@ class BMLyonBD(scrapy.Spider):
                 yield scrapy.Request(urllib.parse.urljoin(response.url, item), callback=self.parse_page, dont_filter=True)
                 break
 
+if __name__ == "__main__":
+    from scrapy.commands.runspider import Command
+    from scrapy.crawler import CrawlerProcess
+    from scrapy.settings import Settings
+
+    import optparse
+
+    parser = optparse.OptionParser()
+    cmd = scrapy.commands.runspider.Command()
+    cmd.settings = Settings(cmd.default_settings)
+    cmd.add_options(parser)
+    opts, args = parser.parse_args()
+    cmd.process_options(args, opts)
+    
+    crawler = CrawlerProcess(cmd.settings)
+    crawler.crawl(BMLyonBD, **opts.spargs)
+    crawler.start()

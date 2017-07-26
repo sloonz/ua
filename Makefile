@@ -1,22 +1,24 @@
 PREFIX=/usr/local
 DESTDIR=
-PYTHONVER=$(shell pkg-config --modversion python3 2>/dev/null)
 
 BINDIR=$(DESTDIR)$(PREFIX)/bin
-PYLIBDIR=$(DESTDIR)$(PREFIX)/lib/python$(PYTHONVER)/site-packages
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
 GODIRS=ggs rss2json maildir-put ua-inline ua-proxify
+SCRAPERS=edxcourses lyon-bm-bd mal mangareader yggtorrent torrent9
 
 export GOPATH ?= $(PWD)/tmp-go
 
 .PHONY: all clean doc
 
-all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify
+all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify \
+	scrapers/ua-scraper-torrent9
+
 doc:
 	test -d doc || mkdir doc
 	test -f doc/ua.md || ln -s ../README.md doc/ua.md
+	test -f doc/ua-scrapers.md || ln -s ../scrapers/README.md doc/ua-scrapers.md
 	for d in $(GODIRS) ; do test -f doc/$$d.md || ln -s ../$$d/README.md doc/$$d.md ; done
 	cd doc ; for f in *.md ; do ronn $$f ; done
 
@@ -35,6 +37,10 @@ ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
 ua-proxify/ua-proxify: ua-proxify/ua-proxify.go $(GOPATH)
 	cd ua-proxify; go get -d && go build
 
+scrapers/ua-scraper-torrent9: scrapers/torrent9.js
+	cd scrapers ; npm install && npm run webpack -- -p --output-filename ua-scraper-torrent9 --entry ./torrent9
+	chmod +x $@
+
 $(GOPATH):
 	mkdir $(GOPATH)
 	mkdir $(GOPATH)/bin
@@ -44,12 +50,8 @@ $(GOPATH):
 install: all
 	install -d $(BINDIR)
 	for f in $(GODIRS) ; do install $$f/$$f $(BINDIR)/ ; done
-	install scrappers/mangareader2json $(BINDIR)/
-	install scrappers/ipboard2json $(BINDIR)/
-	install scrappers/medscape2json $(BINDIR)/
-	
-	test -n "$(PYTHONVER)" && install -d $(PYLIBDIR)
-	test -n "$(PYTHONVER)" && install scrappers/scraplib.py $(PYLIBDIR)/
+	for s in $(SCRAPERS) ; do install scrapers/ua-scraper-$$s $(BINDIR)/ ; done
+	install weboobmsg2json/weboobmsg2json $(BINDIR)/
 	
 	install -d $(DOCDIR)
 	install -d $(MANDIR)/man1/
@@ -59,4 +61,4 @@ install: all
 
 clean:
 	for f in $(GODIRS) ; do rm -f $$f/$$f ; done
-	rm -rf tmp-go
+	rm -rf tmp-go scapers/node_modules scrapers/ua-scraper-torrent9

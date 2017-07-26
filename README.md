@@ -9,9 +9,9 @@ description in their respective folder.
 them in a maildir
 * `rss2json` transforms any RSS/Atom feed into a set of messages that
 `maildir-put` can process
-* You can write your own producers for maildir-put ; an example for the
-[mangareader](http://mangareader.net) service is provided.
-* You can also put filters, like `ua-inline`
+* You can write your own producers (scrapers) for maildir-put ; some are
+already provided in the `scrapers/` directory.
+* You can also put filters, like `ua-inline` or `ua-proxify`.
 
 ## Usage
 
@@ -22,7 +22,7 @@ them in a maildir
 * Go
 * libxml
 * [jq](https://stedolan.github.io/jq/)
-* For additional scrappers: python 3, aiohttp and pyquery
+* For additional scrapers: scrapy, python 3 and nodejs
 
 ## Installation
 
@@ -42,7 +42,7 @@ and my Github personal feed into inbox:
 	}
 
 	mangareader() {
-		command 2000 "mangareader2json http://mangareader.net/$1 | "\
+		command 2000 "ua-scraper-mangareader -a name=$1 | "\
 			"maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
 	}
 
@@ -58,3 +58,11 @@ and my Github personal feed into inbox:
 	mangareader gantz
 
 	rss https://github.com/sloonz.private.atom?token=HIDDEN ""
+
+## Weboob compatibility
+
+You can use [weboob](http://weboob.org/) modules used by
+[boobmsg](http://weboob.org/applications/boobmsg) to generate
+messages. Configure the modules using `boobmsg`, and use `weboobmsg2json
+[module-name]` to generate messages. `[module-name]` can be found in
+`~/.config/weboob/backends`.

@@ -1,0 +1,43 @@
+#!/usr/bin/python3
+
+import scrapy
+import json
+import re
+import urllib.parse
+
+class Mangareader(scrapy.Spider):
+    name = "mangareader"
+
+    def __init__(self, *args, **kwargs):
+        super(Mangareader, self).__init__(*args, **kwargs)
+        self.start_urls = [urllib.parse.urljoin("http://www.mangareader.net", kwargs['name'])]
+
+    def parse(self, response):
+        for chapter in response.css('#latestchapters > ul > li'):
+            url = urllib.parse.urljoin(self.start_urls[0], chapter.css('::attr(href)').extract()[0])
+            title = u' '.join(chapter.css('::text').extract()).strip()
+            print(json.dumps({
+                "title": title,
+                "body": '<a href="%s">%s</a>' % (url, title),
+                "host": "mangareader.net",
+                "url": url,
+                "id": url
+            }))
+
+if __name__ == "__main__":
+    from scrapy.commands.runspider import Command
+    from scrapy.crawler import CrawlerProcess
+    from scrapy.settings import Settings
+
+    import optparse
+
+    parser = optparse.OptionParser()
+    cmd = scrapy.commands.runspider.Command()
+    cmd.settings = Settings(cmd.default_settings)
+    cmd.add_options(parser)
+    opts, args = parser.parse_args()
+    cmd.process_options(args, opts)
+    
+    crawler = CrawlerProcess(cmd.settings)
+    crawler.crawl(Mangareader, **opts.spargs)
+    crawler.start()

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "UA" "" "April 2016" "" ""
+.TH "UA" "" "July 2017" "" ""
 This is a set of tools to aggregate all your information into your maildir\. Each tool can be used separately ; you can find a more complete description in their respective folder\.
 .
 .IP "\(bu" 4
@@ -14,10 +14,10 @@ This is a set of tools to aggregate all your information into your maildir\. Eac
 \fBrss2json\fR transforms any RSS/Atom feed into a set of messages that \fBmaildir\-put\fR can process
 .
 .IP "\(bu" 4
-You can write your own producers for maildir\-put ; an example for the mangareader \fIhttp://mangareader\.net\fR service is provided\.
+You can write your own producers (scrapers) for maildir\-put ; some are already provided in the \fBscrapers/\fR directory\.
 .
 .IP "\(bu" 4
-You can also put filters, like \fBua\-inline\fR
+You can also put filters, like \fBua\-inline\fR or \fBua\-proxify\fR\.
 .
 .IP "" 0
 .
@@ -41,7 +41,7 @@ libxml
 jq \fIhttps://stedolan\.github\.io/jq/\fR
 .
 .IP "\(bu" 4
-For additional scrappers: python 3, aiohttp and pyquery
+For additional scrapers: scrapy, python 3 and nodejs
 .
 .IP "" 0
 .
@@ -67,7 +67,7 @@ rss() {
 }
 
 mangareader() {
-    command 2000 "mangareader2json http://mangareader\.net/$1 | "\e
+    command 2000 "ua\-scraper\-mangareader \-a name=$1 | "\e
         "maildir\-put \-root $HOME/Maildir\-feeds \-folder Entertainment"
 }
 
@@ -87,4 +87,6 @@ rss https://github\.com/sloonz\.private\.atom?token=HIDDEN ""
 .fi
 .
 .IP "" 0
-
+.
+.SH "Weboob compatibility"
+You can use weboob \fIhttp://weboob\.org/\fR modules used by boobmsg \fIhttp://weboob\.org/applications/boobmsg\fR to generate messages\. Configure the modules using \fBboobmsg\fR, and use \fBweboobmsg2json [module\-name]\fR to generate messages\. \fB[module\-name]\fR can be found in \fB~/\.config/weboob/backends\fR\.
