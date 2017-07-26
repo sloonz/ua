@@ -12,13 +12,16 @@ class Animes(scrapy.Spider):
             genres = item.css('.genres')[0]
             desc = item.css('.synopsis')[0]
             link = title.css('::attr("href")')[0].extract()
-            img = re.findall(r'url\s*\(\s*([^\s)]+)', item.css('.image::attr("style")')[0].extract())[0]
-            img_tag = u'<img src="%s" />' % img
+            try:
+                img = item.css('.image img::attr("src")')[0].extract()
+            except:
+                img = item.css('.image img::attr("data-src")')[0].extract()
+            img_tag = '<img src="%s" />' % img
 
-            print(json.dumps({
+            print((json.dumps({
                 'url': link,
                 'id': link,
-                'title': u' '.join(title.css('::text').extract()),
-                'body': u'%s %s %s %s' % (title.extract(), img_tag, desc.extract(), genres.extract()),
+                'title': ' '.join(title.css('::text').extract()),
+                'body': '%s %s %s %s' % (title.extract(), img_tag, desc.extract(), genres.extract()),
                 'host': 'myanimelist.net'
-            }))
+            })))

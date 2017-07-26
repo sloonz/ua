@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 import json
-import urlparse
+import urllib.parse
 import time
 import scrapy
 import email.utils
@@ -14,7 +14,7 @@ class EdxCourse:
     def parse_description(self, response):
         def do_parse(response):
             self.data["body"] += json.loads(response.body)["description"]
-            print json.dumps(self.data)
+            print(json.dumps(self.data))
 
         yield scrapy.Request("https://www.edx.org/api/catalog/v2/courses/%s" % response.css('main ::attr(data-course-id)').extract()[0],
                 callback=do_parse)
@@ -26,9 +26,9 @@ class EdxCourses(scrapy.Spider):
 
     def parse(self, response):
         for course in json.loads(response.body):
-            if not u"English" in course["languages"]:
+            if not "English" in course["languages"]:
                 continue
-            if u"profed" in course["types"]:
+            if "profed" in course["types"]:
                 continue
 
             if course['pace']:
@@ -36,13 +36,13 @@ class EdxCourses(scrapy.Spider):
             else:
                 session = course.get('start_time')
 
-            body = u'<p><a href="%s">%s — %s</a> (%s)</p>' % (course["url"], course["code"], course["l"], course["start"])
-            body += u'<p><a href="%s"><img src="%s"></a></p>' % (course["url"], urlparse.urljoin(self.start_urls[0], course["image"]["src"]))
+            body = '<p><a href="%s">%s — %s</a> (%s)</p>' % (course["url"], course["code"], course["l"], course["start"])
+            body += '<p><a href="%s"><img src="%s"></a></p>' % (course["url"], urllib.parse.urljoin(self.start_urls[0], course["image"]["src"]))
 
             course_item = EdxCourse({
                 "url": course["url"],
-                "title": u"%s %s" % (u" ".join("[%s]"%_ for _ in course["schools"]), course["l"]),
-                "id": u"%s.%s.%s.edx" % (course["l"], u".".join(course["schools"]), session),
+                "title": "%s %s" % (" ".join("[%s]"%_ for _ in course["schools"]), course["l"]),
+                "id": "%s.%s.%s.edx" % (course["l"], ".".join(course["schools"]), session),
                 "date": email.utils.formatdate(course["start_time"]),
                 "body": body
             })
