@@ -20,7 +20,7 @@ class YggTorrent(scrapy.Spider):
     def parse_item(self, response):
         print((json.dumps({
             'title': u" ".join(response.css('.panel-title')[0].css('::text').extract()),
-            'body': '%s<p><a href="View torrent">%s</a></p>' % (response.css('#description').extract()[0], response.url),
+            'body': '%s<p><a href="%s">View torrent</a></p>' % (response.css('#description').extract()[0], response.url),
             'id': response.url,
             'host': 'yggtorrent.com',
             'url': response.url
