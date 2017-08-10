@@ -6,7 +6,7 @@ DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
 GODIRS=ggs rss2json maildir-put ua-inline ua-proxify
-SCRAPERS=edxcourses lyon-bm-bd mal mangareader yggtorrent torrent9
+SCRAPERS=edxcourses lyon-bm-bd mal mangareader yggtorrent torrent9 bookys
 
 export GOPATH ?= $(PWD)/tmp-go
 

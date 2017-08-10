@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+
+import scrapy
+import json
+import re
+
+class Bookys(scrapy.Spider):
+    name = "bookys"
+
+    def __init__(self, *args, **kwargs):
+        super(Bookys, self).__init__(*args, **kwargs)
+        self.start_urls = [kwargs['url']]
+
+    def parse(self, response):
+        for item in response.css('#contenu .corps td'):
+            title = u' '.join(item.css('b ::text').extract()).strip()
+            img = item.css('img ::attr(src)').extract()[0]
+            url = re.search(r'http://[^"\']+', item.css('.onblocks5::attr(onclick)').extract()[0]).group(0)
+            print(json.dumps({
+                'url': url,
+                'title': title,
+                'host': 'bookys.me',
+                'body': '<img src="%s"><p><a href="%s">%s</a></p>' % (img, url, title),
+                'id': url,
+                'img': img
+                }))
+
+if __name__ == "__main__":
+    from scrapy.commands.runspider import Command
+    from scrapy.crawler import CrawlerProcess
+    from scrapy.settings import Settings
+
+    import optparse
+
+    parser = optparse.OptionParser()
+    cmd = scrapy.commands.runspider.Command()
+    cmd.settings = Settings(cmd.default_settings)
+    cmd.add_options(parser)
+    opts, args = parser.parse_args()
+    cmd.process_options(args, opts)
+
+    crawler = CrawlerProcess(cmd.settings)
+    crawler.crawl(Bookys, **opts.spargs)
+    crawler.start()

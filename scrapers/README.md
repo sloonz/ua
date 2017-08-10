@@ -41,3 +41,9 @@ Usage:
 
 * All categories: `ua-scraper-yggtorrent`
 * Specific category: `ua-scraper-yggtorrent [url]`.
+
+# ua-scraper-bookys
+
+List latest books on [bookys](http://www.bookys.me/)
+
+Usage: `ua-scrapper-bookys [category-url]`
