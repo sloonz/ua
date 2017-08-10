@@ -17,9 +17,9 @@ class YggTorrent(scrapy.Spider):
         super(YggTorrent, self).__init__(*args, **kwargs)
         self.start_urls = [kwargs.get('url', 'https://yggtorrent.com/')]
 
-    def parse_item(self, response):
+    def parse_item(self, response, title):
         print((json.dumps({
-            'title': u" ".join(response.css('.panel-title')[0].css('::text').extract()),
+            'title': title,
             'body': '%s<p><a href="%s">View torrent</a></p>' % (response.css('#description').extract()[0], response.url),
             'id': response.url,
             'host': 'yggtorrent.com',
@@ -28,8 +28,9 @@ class YggTorrent(scrapy.Spider):
 
     def parse(self, response):
         for item in response.css('a.torrent-name'):
-            url = urllib.parse.urljoin(response.url, item.css('::attr("href")').extract()[0])
-            yield scrapy.Request(url, self.parse_item)
+            url = urllib.parse.urljoin(response.url, item.css('::attr("href")').extract_first())
+            title = item.css('::text').extract_first()
+            yield scrapy.Request(url, lambda response: self.parse_item(response, title))
 
 if __name__ == "__main__":
     from scrapy.commands.runspider import Command
