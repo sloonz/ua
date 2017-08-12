@@ -19,7 +19,7 @@ class YggTorrent(scrapy.Spider):
 
     def parse_item(self, response, title):
         print((json.dumps({
-            'title': title,
+            'title': title.strip(),
             'body': '%s<p><a href="%s">View torrent</a></p>' % (response.css('#description').extract()[0], response.url),
             'id': response.url,
             'host': 'yggtorrent.com',
@@ -27,10 +27,12 @@ class YggTorrent(scrapy.Spider):
             })))
 
     def parse(self, response):
+        def details_request(url, title):
+            return scrapy.Request(url, lambda response: self.parse_item(response, title))
         for item in response.css('a.torrent-name'):
             url = urllib.parse.urljoin(response.url, item.css('::attr("href")').extract_first())
             title = item.css('::text').extract_first()
-            yield scrapy.Request(url, lambda response: self.parse_item(response, title))
+            yield details_request(url, title)
 
 if __name__ == "__main__":
     from scrapy.commands.runspider import Command
