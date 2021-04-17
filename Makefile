@@ -37,10 +37,6 @@ ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
 ua-proxify/ua-proxify: ua-proxify/ua-proxify.go $(GOPATH)
 	cd ua-proxify; go get -d && go build
 
-scrapers/ua-scraper-torrent9: scrapers/torrent9.js
-	cd scrapers ; npm install && npm run webpack -- -p --output-filename ua-scraper-torrent9 --entry ./torrent9
-	chmod +x $@
-
 $(GOPATH):
 	mkdir $(GOPATH)
 	mkdir $(GOPATH)/bin
