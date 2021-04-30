@@ -1,47 +1,25 @@
 #!/usr/bin/python3
 
-import scrapy
 import json
 import re
 
-class Animes(scrapy.Spider):
-    name = "mal-animes"
-    start_urls = ["http://myanimelist.net/anime/season"]
+import lxml.etree
+import requests
 
-    def parse(self, response):
-        for item in response.css('.seasonal-anime'):
-            title = item.css('.link-title')[0]
-            genres = item.css('.genres')[0]
-            desc = item.css('.synopsis')[0]
-            link = title.css('::attr("href")')[0].extract()
-            try:
-                img = item.css('.image img::attr("src")')[0].extract()
-            except:
-                img = item.css('.image img::attr("data-src")')[0].extract()
-            img_tag = '<img src="%s" />' % img
+html = lxml.etree.HTML(requests.get("http://myanimelist.net/anime/season").text)
+for item in html.cssselect(".seasonal-anime"):
+    title = item.cssselect('.link-title')[0]
+    genres = item.cssselect('.genres')[0]
+    desc = item.cssselect('.synopsis')[0]
 
-            print((json.dumps({
-                'url': link,
-                'id': link,
-                'title': ' '.join(title.css('::text').extract()),
-                'body': '%s %s %s %s' % (title.extract(), img_tag, desc.extract(), genres.extract()),
-                'host': 'myanimelist.net'
-            })))
+    link = title.get("href")
+    img = item.cssselect(".image img")[0]
+    img_tag = '<img src="%s" />' % (img.get("src") or img.get("data-src"))
 
-if __name__ == "__main__":
-    from scrapy.commands.runspider import Command
-    from scrapy.crawler import CrawlerProcess
-    from scrapy.settings import Settings
-
-    import optparse
-
-    parser = optparse.OptionParser()
-    cmd = scrapy.commands.runspider.Command()
-    cmd.settings = Settings(cmd.default_settings)
-    cmd.add_options(parser)
-    opts, args = parser.parse_args()
-    cmd.process_options(args, opts)
-    
-    crawler = CrawlerProcess(cmd.settings)
-    crawler.crawl(Animes, **opts.spargs)
-    crawler.start()
+    print((json.dumps({
+        'url': link,
+        'id': link,
+        'title': title.text,
+        'body': '<p>%s</p> <p>%s</p> <p>%s</p> <p>%s</p>' % (lxml.etree.tostring(title).decode(), img_tag, lxml.etree.tostring(desc).decode(), lxml.etree.tostring(genres).decode()),
+        'host': 'myanimelist.net'
+    })))

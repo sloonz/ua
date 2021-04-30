@@ -6,14 +6,13 @@ DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
 GODIRS=ggs rss2json maildir-put ua-inline ua-proxify
-SCRAPERS=edxcourses lyon-bm-bd mal mangareader yggtorrent torrent9 bookys
+SCRAPERS=mal
 
 export GOPATH ?= $(PWD)/tmp-go
 
 .PHONY: all clean doc
 
-all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify \
-	scrapers/ua-scraper-torrent9
+all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify
 
 doc:
 	test -d doc || mkdir doc
@@ -57,4 +56,3 @@ install: all
 
 clean:
 	for f in $(GODIRS) ; do rm -f $$f/$$f ; done
-	rm -rf tmp-go scapers/node_modules scrapers/ua-scraper-torrent9
