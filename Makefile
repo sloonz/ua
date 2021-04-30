@@ -22,19 +22,19 @@ doc:
 	cd doc ; for f in *.md ; do ronn $$f ; done
 
 ggs/ggs: ggs/ggs.go $(GOPATH)
-	cd ggs; go get -d && go build
+	cd ggs; go build
 
 rss2json/rss2json: rss2json/rss2json.go $(GOPATH)
-	cd rss2json; go get -d && go build
+	cd rss2json; go build
 
 maildir-put/maildir-put: maildir-put/maildir-put.go maildir-put/cache.go $(GOPATH)
-	cd maildir-put; go get -d && go build
+	cd maildir-put; go build
 
 ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
-	cd ua-inline; go get -d && go build
+	cd ua-inline; go build
 
 ua-proxify/ua-proxify: ua-proxify/ua-proxify.go $(GOPATH)
-	cd ua-proxify; go get -d && go build
+	cd ua-proxify; go build
 
 $(GOPATH):
 	mkdir $(GOPATH)
