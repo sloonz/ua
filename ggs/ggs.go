@@ -45,6 +45,35 @@ command() {
 echo "$commands" | jq --arg workers "$workers" '{Workers: ($workers|tonumber), Commands: .}'
 `
 
+type loggerWriter struct {
+	log         *log.Logger
+	cmd         *exec.Cmd
+	buf         []byte
+}
+
+func (w *loggerWriter) Write(data []byte) (int, error) {
+	sz := len(data)
+	data = append(w.buf, data...)
+	lines := bytes.Split(data, []byte("\n"))
+	if len(lines[len(lines)-1]) == 0 {
+		w.buf = nil
+	} else {
+		w.buf = lines[len(lines)-1]
+	}
+	lines = lines[:len(lines)-1]
+	for _, line := range lines {
+		w.log.Printf("[%d] %s", w.cmd.Process.Pid, string(line))
+	}
+	return sz, nil
+}
+
+func (w *loggerWriter) Close() {
+	if w.buf != nil {
+		w.log.Printf("[%d] %s", w.cmd.Process.Pid, string(w.buf))
+		w.buf = nil
+	}
+}
+
 func readConfig(cfgFile string) (cfg *Config, err error) {
 	sp := exec.Command("sh")
 	sp.Stderr = os.Stderr
@@ -68,14 +97,18 @@ func process(cmd *Command) {
 	var err error
 
 	sp := exec.Command("sh", "-c", cmd.Command)
+	stdout := &loggerWriter{log: log.Default(), cmd: sp}
+	stderr := &loggerWriter{log: log.Default(), cmd: sp}
 	sp.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	sp.Stdout = os.Stdout
-	sp.Stderr = os.Stderr
+	sp.Stdout = stdout
+	sp.Stderr = stderr
+
 	if err = sp.Start(); err != nil {
-		log.Printf("%s failed: %s", err.Error(), cmd.Command)
+		log.Printf("%s failed: %s", cmd.Command, err.Error())
 		return
 	}
-	log.Printf("(%d) %s", sp.Process.Pid, cmd.Command)
+	log.Printf("[%d] %s", sp.Process.Pid, cmd.Command)
+
 	if cmd.Timeout > 0 {
 		timer = time.AfterFunc(time.Duration(cmd.Timeout)*time.Second, func() {
 			if sp.ProcessState == nil {
@@ -83,11 +116,17 @@ func process(cmd *Command) {
 			}
 		})
 	}
-	if err = sp.Wait(); err != nil {
-		log.Printf("(%d) %s failed: %s", sp.Process.Pid, cmd.Command, err.Error())
+
+	err = sp.Wait()
+	stdout.Close()
+	stderr.Close()
+
+	if err != nil {
+		log.Printf("[%d] %s failed: %s", sp.Process.Pid, cmd.Command, err.Error())
 	} else {
-		log.Printf("(%d) done", sp.Process.Pid)
+		log.Printf("[%d] done", sp.Process.Pid)
 	}
+
 	timer.Stop()
 }
 
