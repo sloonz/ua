@@ -32,6 +32,8 @@ github.com/onsi/gomega v1.11.0/go.mod h1:azGKhqFUon9Vuj0YmTfLSmx0FUwqXYSTl5re8lQ
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sloonz/cfeedparser v0.0.0-20160203163450-a220b181f09f h1:pa1Gxag3FaJ68Mz2LaB9KYyzXG3pCnDIjP4A6M3XQqo=
 github.com/sloonz/cfeedparser v0.0.0-20160203163450-a220b181f09f/go.mod h1:pSLBLXl/QPOmNbplyTkt/TdU/0gWf/BidRMVcyfQIKk=
+github.com/sloonz/cfeedparser v0.0.0-20210430180901-ecf35ac90d83 h1:hzwGBD4Vb4D/wMzSK8k/8aRZySfykyMx3sYJSfIH0jw=
+github.com/sloonz/cfeedparser v0.0.0-20210430180901-ecf35ac90d83/go.mod h1:0G5ru/AAfpMT2UNCjXytFSpOyTxOZW4+3EFa8uSF2OU=
 github.com/sloonz/go-maildir v0.0.0-20210417175458-ec35083290ab h1:H8W5t9eJbVOltrNUQBPWGgpqFszJifXdcjJ0nhVREQw=
 github.com/sloonz/go-maildir v0.0.0-20210417175458-ec35083290ab/go.mod h1:DtE1Xilsk4k8SzX2J52IgP9+bTpxKC8ZdTsbqq9QJJw=
 github.com/sloonz/go-mime-message v0.0.0-20210417175330-cb2e834a9b3b h1:yzAB0kQ/6jGaAOMmyylzH2SZp7g7vomILqkxAs4ghqw=
