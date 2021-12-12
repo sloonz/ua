@@ -6,6 +6,8 @@
 
 	rss2json feed-url
 
+	rss2json -url=feed-url < feed-from-stdin
+
 ## Dependencies
 
 * libxml
