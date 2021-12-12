@@ -123,6 +123,15 @@ func encNoFoldLiteral(s string, buf *bytes.Buffer) {
 	}
 }
 
+func formatDate(date string) string {
+	parsedDate, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		return date
+	}
+
+	return parsedDate.Format(time.RFC3339)
+}
+
 func MessageId(id, host string) string {
 	// According to RFC 2822:
 	// msg-id          =       [CFWS] "<" id-left "@" id-right ">" [CFWS]
@@ -199,7 +208,7 @@ func (m *Message) Process(md *maildir.Maildir) error {
 	// In a maildir, mails are expected to end with LF line endings. Most softwares are
 	// just fine with CRLF line endings, but some (for example Mutt) don’t.
 	mail.EOL = "\n"
-	mail.SetHeader("Date", m.Date)
+	mail.SetHeader("Date", formatDate(m.Date))
 	mail.SetHeader("Subject", message.EncodeWord(m.Title))
 	mail.SetHeader("From", message.EncodeWord(m.Author)+" <"+m.AuthorEmail+">")
 	if id != "" {
