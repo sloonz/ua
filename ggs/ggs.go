@@ -46,9 +46,9 @@ echo "$commands" | jq --arg workers "$workers" '{Workers: ($workers|tonumber), C
 `
 
 type loggerWriter struct {
-	log         *log.Logger
-	cmd         *exec.Cmd
-	buf         []byte
+	log *log.Logger
+	cmd *exec.Cmd
+	buf []byte
 }
 
 func (w *loggerWriter) Write(data []byte) (int, error) {
