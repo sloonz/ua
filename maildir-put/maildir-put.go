@@ -129,7 +129,7 @@ func formatDate(date string) string {
 		return date
 	}
 
-	return parsedDate.Format(time.RFC3339)
+	return parsedDate.Format(time.RFC1123Z)
 }
 
 func MessageId(id, host string) string {
