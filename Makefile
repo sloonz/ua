@@ -8,8 +8,6 @@ MANDIR=$(DESTDIR)$(PREFIX)/share/man
 GODIRS=ggs rss2json maildir-put ua-filter ua-inline ua-proxify
 SCRAPERS=mal
 
-export GOPATH ?= $(PWD)/tmp-go
-
 .PHONY: all clean doc
 
 all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-filter/ua-filter ua-inline/ua-inline ua-proxify/ua-proxify
@@ -21,29 +19,23 @@ doc:
 	for d in $(GODIRS) ; do test -f doc/$$d.md || ln -s ../$$d/README.md doc/$$d.md ; done
 	cd doc ; for f in *.md ; do ronn $$f ; done
 
-ggs/ggs: ggs/ggs.go $(GOPATH)
+ggs/ggs: ggs/ggs.go
 	cd ggs; go build
 
-rss2json/rss2json: rss2json/rss2json.go $(GOPATH)
+rss2json/rss2json: rss2json/rss2json.go
 	cd rss2json; go build
 
-maildir-put/maildir-put: maildir-put/maildir-put.go $(GOPATH)
+maildir-put/maildir-put: maildir-put/maildir-put.go
 	cd maildir-put; go build
 
-ua-filter/ua-filter: ua-filter/ua-filter.go ua-filter/cache.go $(GOPATH)
+ua-filter/ua-filter: ua-filter/ua-filter.go ua-filter/cache.go
 	cd ua-filter; go build
 
-ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
+ua-inline/ua-inline: ua-inline/ua-inline.go
 	cd ua-inline; go build
 
-ua-proxify/ua-proxify: ua-proxify/ua-proxify.go $(GOPATH)
+ua-proxify/ua-proxify: ua-proxify/ua-proxify.go
 	cd ua-proxify; go build
-
-$(GOPATH):
-	mkdir $(GOPATH)
-	mkdir $(GOPATH)/bin
-	mkdir $(GOPATH)/src
-	mkdir $(GOPATH)/pkg
 
 install: all
 	install -d $(BINDIR)
