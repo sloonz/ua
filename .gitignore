@@ -4,6 +4,7 @@ rss2json/rss2json
 ua-inline/ua-inline
 ua-proxify/ua-proxify
 scrapers/ua-scraper-torrent9
+ua-filter/ua-filter
 tmp-go
 *.pyc
 node_modules

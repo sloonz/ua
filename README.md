@@ -5,13 +5,14 @@ maildir. Each tool can be used separately ; you can find a more complete
 description in their respective folder.
 
 * `ggs` is a software which runs commands periodically
+* `ua-filter` normalizes messages and drops duplicates
 * `maildir-put` reads a set of messages from its standard input and puts
 them in a maildir
 * `rss2json` transforms any RSS/Atom feed into a set of messages that
 `maildir-put` can process
 * You can write your own producers (scrapers) for maildir-put ; some are
 already provided in the `scrapers/` directory.
-* You can also put filters, like `ua-inline` or `ua-proxify`.
+* You can also put filters, like `ua-filter`, `ua-inline` or `ua-proxify`.
 
 ## Usage
 
@@ -38,11 +39,11 @@ and my Github personal feed into inbox:
 	default_timeout=30
 
 	rss() {
-		command 2000 "rss2json \"$1\" | ua-inline | maildir-put -root $HOME/Maildir-feeds -folder \"$2\""
+		command 2000 "rss2json \"$1\" | ua-inline | ua-filter | maildir-put -root $HOME/Maildir-feeds -folder \"$2\""
 	}
 
 	mangareader() {
-		command 2000 "ua-scraper-mangareader -a name=$1 | "\
+		command 2000 "ua-scraper-mangareader -a name=$1 | ua-filter | "\
 			"maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
 	}
 

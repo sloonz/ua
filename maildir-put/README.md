@@ -1,23 +1,18 @@
 # maildir-put
 
 `maildir-put` is a tool to put messages in a predefined JSON format
-inside a maildir. It also try to detect duplicates and drop them.
+inside a maildir. For normalization and duplicate detection, use
+`ua-filter` before it.
 
 ## Usage
 
-	message-producer | maildir-put [arguments]
+	message-producer | ua-filter [arguments] | maildir-put [arguments]
 
 Available arguments:
 
-* `-cache`: path to a cache file used to store message IDs for duplicate
-  detection
 * `-root`: path to the root maildir directory. Defaults to ~/Maildir.
 * `-folder`: maildir folder to put messages. Defaults to "", the inbox.
   The folder separator is "/".
-* `-redis`: specify this flag to use redis for message IDs cache. If both
-  `-redis` and `-cache` are specified, the given cache will be migrated to
-	redis
-* `-redis-db`, `-redis-addr`, `-redis-password`: redis connection settings.
 
 ## Installation
 
@@ -31,10 +26,11 @@ keys are:
 
 * *body*: the body of the message, in HTML. Mandatory.
 * *title*: the subject of the message, in text. Mandatory.
-* *date*: the date of the message. Optional, defaults to current time. If
-  provided, must be RFC 2822 compliant.
+* *date*: the date of the message. Optional. If provided, must be RFC 2822
+  compliant. `ua-filter` can fill it if missing.
 * *author*: the name of the author, in text. Optional.
-* *authorEmail*: the mail addresse of the author. Optional.
+* *authorEmail*: the mail addresse of the author. Optional. `ua-filter` can
+  fill it if missing.
 * *id*: an unique identifier for the message. It will be used for the
   creation of the Message-Id header, as well as in duplicates detection. It
   should include three parts: an unique identifier for the application
@@ -48,7 +44,8 @@ keys are:
   the hostname of the server form where you fetched the information). Used
   in `Message-Id` and `References` headers construction, as well as in
   duplicates detection. Optional, but strongly encouraged for threaded
-  discussions handling and duplicates detection.
+  discussions handling and duplicates detection. `ua-filter` can fill it
+  if missing.
 * *references*: for threaded discussions, *id* of the parent messages. Note
   that *host* must match in the two messages.
 * *url*: URL of the message. Used by `ua-inline` to resolve relative

@@ -16,9 +16,6 @@ import (
 	"time"
 )
 
-var hostname string
-var cache Cache
-
 type Attachment struct {
 	CID      string `json:"cid"`
 	MimeType string `json:"mimeType"`
@@ -154,23 +151,8 @@ func (m *Message) Process(md *maildir.Maildir) error {
 		return errors.New("Missing mandatory field")
 	}
 
-	if m.Host == "" {
-		m.Host = hostname
-	}
-
-	if m.AuthorEmail == "" {
-		m.AuthorEmail = "noreply@" + m.Host
-	}
-
-	if m.Date == "" {
-		m.Date = time.Now().UTC().Format(time.RFC1123Z)
-	}
-
 	if m.Id != "" {
 		id = MessageId(m.Id, m.Host)
-		if cache.Getset(m.Id, m.Host, id) {
-			return nil
-		}
 	}
 
 	rootContentType := "text/html; charset=\"UTF-8\""
@@ -233,24 +215,10 @@ func main() {
 
 	flag.StringVar(&rootDir, "root", os.ExpandEnv("$HOME/Maildir"), "path to maildir")
 	flag.StringVar(&folder, "folder", "", "maildir folder name to put email (empty for inbox)")
-	flag.StringVar(&cache.path, "cache", os.ExpandEnv("$HOME/.cache/maildir-put.cache"),
-		"path to store message-ids to drop duplicate messages")
-	flag.BoolVar(&cache.useRedis, "redis", false, "use redis for cache storage")
-	flag.StringVar(&cache.redisOptions.Addr, "redis-addr", "127.0.0.1:6379", "redis address")
-	flag.Int64Var(&cache.redisOptions.DB, "redis-db", 0, "redis base")
-	flag.StringVar(&cache.redisOptions.Password, "redis-password", "", "redis password")
 
 	if flag.Parse(); !flag.Parsed() {
 		flag.PrintDefaults()
 		os.Exit(1)
-	}
-
-	if err = cache.OpenCache(); err != nil {
-		log.Fatalf("Can't open cache: %s", err.Error())
-	}
-
-	if hostname, err = os.Hostname(); err != nil {
-		log.Fatalf("Can't get hostname: %s", err.Error())
 	}
 
 	md, err := maildir.New(rootDir, true)
@@ -282,7 +250,4 @@ func main() {
 		}
 	}
 
-	if err = cache.Dump(); err != nil {
-		log.Printf("warning: can't dump cache: %s", err.Error())
-	}
 }

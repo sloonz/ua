@@ -1,3 +1,5 @@
+github.com/bmatsuo/lmdb-go v1.8.0 h1:ohf3Q4xjXZBKh4AayUY4bb2CXuhRAI8BYGlJq08EfNA=
+github.com/bmatsuo/lmdb-go v1.8.0/go.mod h1:wWPZmKdOAZsl4qOqkowQ1aCrFie1HU8gWloHMCeAUdM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
@@ -30,8 +32,6 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.11.0 h1:+CqWgvj0OZycCaqclBD1pxKHAU+tOkHmQIWvDHq2aug=
 github.com/onsi/gomega v1.11.0/go.mod h1:azGKhqFUon9Vuj0YmTfLSmx0FUwqXYSTl5re8lQLTUg=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/sloonz/cfeedparser v0.0.0-20160203163450-a220b181f09f h1:pa1Gxag3FaJ68Mz2LaB9KYyzXG3pCnDIjP4A6M3XQqo=
-github.com/sloonz/cfeedparser v0.0.0-20160203163450-a220b181f09f/go.mod h1:pSLBLXl/QPOmNbplyTkt/TdU/0gWf/BidRMVcyfQIKk=
 github.com/sloonz/cfeedparser v0.0.0-20210430180901-ecf35ac90d83 h1:hzwGBD4Vb4D/wMzSK8k/8aRZySfykyMx3sYJSfIH0jw=
 github.com/sloonz/cfeedparser v0.0.0-20210430180901-ecf35ac90d83/go.mod h1:0G5ru/AAfpMT2UNCjXytFSpOyTxOZW4+3EFa8uSF2OU=
 github.com/sloonz/go-maildir v0.0.0-20210417175458-ec35083290ab h1:H8W5t9eJbVOltrNUQBPWGgpqFszJifXdcjJ0nhVREQw=

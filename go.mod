@@ -3,6 +3,7 @@ module github.com/sloonz/ua
 go 1.16
 
 require (
+	github.com/bmatsuo/lmdb-go v1.8.0
 	github.com/garyburd/redigo v1.6.2 // indirect
 	github.com/onsi/ginkgo v1.16.1 // indirect
 	github.com/onsi/gomega v1.11.0 // indirect

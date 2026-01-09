@@ -5,14 +5,14 @@ BINDIR=$(DESTDIR)$(PREFIX)/bin
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
-GODIRS=ggs rss2json maildir-put ua-inline ua-proxify
+GODIRS=ggs rss2json maildir-put ua-filter ua-inline ua-proxify
 SCRAPERS=mal
 
 export GOPATH ?= $(PWD)/tmp-go
 
 .PHONY: all clean doc
 
-all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-inline/ua-inline ua-proxify/ua-proxify
+all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-filter/ua-filter ua-inline/ua-inline ua-proxify/ua-proxify
 
 doc:
 	test -d doc || mkdir doc
@@ -27,8 +27,11 @@ ggs/ggs: ggs/ggs.go $(GOPATH)
 rss2json/rss2json: rss2json/rss2json.go $(GOPATH)
 	cd rss2json; go build
 
-maildir-put/maildir-put: maildir-put/maildir-put.go maildir-put/cache.go $(GOPATH)
+maildir-put/maildir-put: maildir-put/maildir-put.go $(GOPATH)
 	cd maildir-put; go build
+
+ua-filter/ua-filter: ua-filter/ua-filter.go ua-filter/cache.go $(GOPATH)
+	cd ua-filter; go build
 
 ua-inline/ua-inline: ua-inline/ua-inline.go $(GOPATH)
 	cd ua-inline; go build
