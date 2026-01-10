@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/google/go-jsonnet"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -14,6 +14,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/google/go-jsonnet"
 )
 
 type Command struct {
@@ -184,10 +186,11 @@ func reload(cfgFile string, oldConfig *Config, runOnce bool) (config *Config, er
 				if runOnce {
 					onceGroup.Done()
 				} else {
+					nextCmd := cmd
 					loopGroup.Add(1)
-					time.AfterFunc(time.Duration(cmd.Delay)*time.Second, func() {
+					time.AfterFunc(time.Duration(nextCmd.Delay)*time.Second, func() {
 						if !config.disabled {
-							ch <- cmd
+							ch <- nextCmd
 						}
 						loopGroup.Done()
 					})
@@ -200,9 +203,18 @@ func reload(cfgFile string, oldConfig *Config, runOnce bool) (config *Config, er
 	}
 
 	for _, cmd := range config.Commands {
-		ch <- cmd
 		if runOnce {
+			ch <- cmd
 			onceGroup.Add(1)
+		} else {
+			nextCmd := cmd
+			loopGroup.Add(1)
+			time.AfterFunc(time.Duration(float32(nextCmd.Delay)*rand.Float32())*time.Second, func() {
+				if !config.disabled {
+					ch <- nextCmd
+				}
+				loopGroup.Done()
+			})
 		}
 	}
 
