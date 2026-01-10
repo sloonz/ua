@@ -1,6 +1,6 @@
 module github.com/sloonz/ua
 
-go 1.23.7
+go 1.24.0
 
 require (
 	github.com/bmatsuo/lmdb-go v1.8.0
@@ -16,8 +16,9 @@ require (
 	github.com/garyburd/redigo v1.6.2 // indirect
 	github.com/onsi/ginkgo v1.16.1 // indirect
 	github.com/onsi/gomega v1.11.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	gopkg.in/bsm/ratelimit.v1 v1.0.0-20160220154919-db14e161995a // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	gopkg.in/bsm/ratelimit.v1 v1.0.0-20170922094635-f56db5e73a5e // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )
