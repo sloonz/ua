@@ -10,6 +10,8 @@ description in their respective folder.
 them in a maildir
 * `rss2json` transforms any RSS/Atom feed into a set of messages that
 `maildir-put` can process
+* `ua-send` sends messages in the same format as `maildir-put` to a SMTP or
+LMTP server
 * You can write your own producers (scrapers) for maildir-put ; some are
 already provided in the `scrapers/` directory.
 * You can also put filters, like `ua-filter`, `ua-inline` or `ua-proxify`.

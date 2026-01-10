@@ -5,12 +5,12 @@ BINDIR=$(DESTDIR)$(PREFIX)/bin
 DOCDIR=$(DESTDIR)$(PREFIX)/share/doc/ua
 MANDIR=$(DESTDIR)$(PREFIX)/share/man
 
-GODIRS=ggs rss2json maildir-put ua-filter ua-inline ua-proxify
+GODIRS=ggs rss2json maildir-put ua-filter ua-inline ua-proxify ua-send
 SCRAPERS=mal
 
 .PHONY: all clean doc
 
-all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-filter/ua-filter ua-inline/ua-inline ua-proxify/ua-proxify
+all: ggs/ggs rss2json/rss2json maildir-put/maildir-put ua-filter/ua-filter ua-inline/ua-inline ua-proxify/ua-proxify ua-send/ua-send
 
 doc:
 	test -d doc || mkdir doc
@@ -36,6 +36,9 @@ ua-inline/ua-inline: ua-inline/ua-inline.go
 
 ua-proxify/ua-proxify: ua-proxify/ua-proxify.go
 	cd ua-proxify; go build
+
+ua-send/ua-send: ua-send/ua-send.go
+	cd ua-send; go build
 
 install: all
 	install -d $(BINDIR)
