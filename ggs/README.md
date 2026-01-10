@@ -17,8 +17,8 @@ jobs .
 
 `ggs [options] [configuration file]`
 
-If no configuration file is provided, `ggs` will use `~/.config/ggsrc`
-by default.
+If no configuration file is provided, `ggs` will use
+`~/.config/ggs.jsonnet` when it exists, otherwise `~/.config/ggsrc`.
 
 ## Requirements
 
@@ -30,7 +30,8 @@ by default.
 
 ## Configuration
 
-Configuration file is a shell script, so same rule as `sh` applies.
+The configuration file is a shell script that generates a JSON document.
+The `command` function appends entries to the JSON `Commands` array.
 
 You create a job with the `command` function, which takes two arguments:
 the delay between launches, and the command to run. You can specify a
@@ -40,6 +41,11 @@ timeout (in seconds) by setting the `timeout` environnement variable
 	timeout=30 command 300 "uptime | mail admin@example.com"
 	command 5 'ping -c 1 github.com || sudo halt -p'
 
+You can set an optional title for logs with the `title` environment
+variable:
+
+	title="Nightly backup" command 3600 "backup.sh"
+
 You can also set the number of workers (maximum number of jobs that can
 run simultaneously):
 
@@ -48,7 +54,26 @@ run simultaneously):
 ## Advanced configuration
 
 The configuration file is just a shell script which produces a JSON
-document which maches the structure of the `Config` structure. You can do
-`exec my_script` to produce the same JSON with a script in your favorite
-language. You can also use variables, functions, execute external
-commands, and so on...
+document which matches the structure of the `Config` structure. You can
+do `exec my_script` to produce the same JSON with a script in your
+favorite language. You can also use variables, functions, execute
+external commands, and so on...
+
+JSON structure:
+
+```
+{
+  "Workers": 5,
+  "Commands": [
+    {
+      "Delay": 300,
+      "Timeout": 30,
+      "Command": "uptime | mail admin@example.com",
+      "Title": "Nightly backup"
+    }
+  ]
+}
+```
+
+You can also provide a Jsonnet configuration file (`*.jsonnet`) that
+evaluates to the same JSON structure.

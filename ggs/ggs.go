@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/google/go-jsonnet"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -18,6 +20,7 @@ type Command struct {
 	Delay   int
 	Timeout int
 	Command string
+	Title   string
 }
 
 type Config struct {
@@ -36,8 +39,10 @@ command() {
     commands=$(echo "$commands" | \
         jq --arg delay "$delay" --arg cmd "$*" \
            --arg timeout "${timeout:-$default_timeout}" \
-           '. + [{Timeout: ($timeout|tonumber), Delay: ($delay|tonumber), Command: $cmd}]')
+           --arg title "${title:-}" \
+           '. + [{Timeout: ($timeout|tonumber), Delay: ($delay|tonumber), Command: $cmd, Title: $title}]')
     timeout=
+    title=
 }
 
 . %s
@@ -46,9 +51,10 @@ echo "$commands" | jq --arg workers "$workers" '{Workers: ($workers|tonumber), C
 `
 
 type loggerWriter struct {
-	log *log.Logger
-	cmd *exec.Cmd
-	buf []byte
+	log   *log.Logger
+	cmd   *exec.Cmd
+	buf   []byte
+	title string
 }
 
 func (w *loggerWriter) Write(data []byte) (int, error) {
@@ -62,25 +68,43 @@ func (w *loggerWriter) Write(data []byte) (int, error) {
 	}
 	lines = lines[:len(lines)-1]
 	for _, line := range lines {
-		w.log.Printf("[%d] %s", w.cmd.Process.Pid, string(line))
+		w.log.Printf("%s %s", formatLabel(w.cmd.Process.Pid, w.title), string(line))
 	}
 	return sz, nil
 }
 
 func (w *loggerWriter) Close() {
 	if w.buf != nil {
-		w.log.Printf("[%d] %s", w.cmd.Process.Pid, string(w.buf))
+		w.log.Printf("%s %s", formatLabel(w.cmd.Process.Pid, w.title), string(w.buf))
 		w.buf = nil
 	}
 }
 
+func formatLabel(pid int, title string) string {
+	if title == "" {
+		return fmt.Sprintf("[%d]", pid)
+	}
+	return fmt.Sprintf("[%d %s]", pid, title)
+}
+
 func readConfig(cfgFile string) (cfg *Config, err error) {
-	sp := exec.Command("sh")
-	sp.Stderr = os.Stderr
-	sp.Stdin = bytes.NewBuffer([]byte(fmt.Sprintf(CONFIG_WRAPPER, cfgFile)))
-	out, err := sp.Output()
-	if err != nil {
-		return nil, err
+	var out []byte
+	if strings.HasSuffix(cfgFile, ".jsonnet") {
+		vm := jsonnet.MakeVM()
+		var jsonText string
+		jsonText, err = vm.EvaluateFile(cfgFile)
+		if err != nil {
+			return nil, err
+		}
+		out = []byte(jsonText)
+	} else {
+		sp := exec.Command("sh")
+		sp.Stderr = os.Stderr
+		sp.Stdin = bytes.NewBuffer([]byte(fmt.Sprintf(CONFIG_WRAPPER, cfgFile)))
+		out, err = sp.Output()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cfg = new(Config)
@@ -97,8 +121,8 @@ func process(cmd *Command) {
 	var err error
 
 	sp := exec.Command("sh", "-c", cmd.Command)
-	stdout := &loggerWriter{log: log.Default(), cmd: sp}
-	stderr := &loggerWriter{log: log.Default(), cmd: sp}
+	stdout := &loggerWriter{log: log.Default(), cmd: sp, title: cmd.Title}
+	stderr := &loggerWriter{log: log.Default(), cmd: sp, title: cmd.Title}
 	sp.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	sp.Stdout = stdout
 	sp.Stderr = stderr
@@ -107,7 +131,7 @@ func process(cmd *Command) {
 		log.Printf("%s failed: %s", cmd.Command, err.Error())
 		return
 	}
-	log.Printf("[%d] %s", sp.Process.Pid, cmd.Command)
+	log.Printf("%s %s", formatLabel(sp.Process.Pid, cmd.Title), cmd.Command)
 
 	if cmd.Timeout > 0 {
 		timer = time.AfterFunc(time.Duration(cmd.Timeout)*time.Second, func() {
@@ -122,9 +146,9 @@ func process(cmd *Command) {
 	stderr.Close()
 
 	if err != nil {
-		log.Printf("[%d] %s failed: %s", sp.Process.Pid, cmd.Command, err.Error())
+		log.Printf("%s %s failed: %s", formatLabel(sp.Process.Pid, cmd.Title), cmd.Command, err.Error())
 	} else {
-		log.Printf("[%d] done", sp.Process.Pid)
+		log.Printf("%s done", formatLabel(sp.Process.Pid, cmd.Title))
 	}
 
 	timer.Stop()
@@ -202,7 +226,12 @@ func main() {
 	flag.Parse()
 
 	if cfgFile = flag.Arg(0); cfgFile == "" {
-		cfgFile = os.ExpandEnv("$HOME/.config/ggsrc")
+		jsonnetPath := os.ExpandEnv("$HOME/.config/ggs.jsonnet")
+		if _, statErr := os.Stat(jsonnetPath); statErr == nil {
+			cfgFile = jsonnetPath
+		} else {
+			cfgFile = os.ExpandEnv("$HOME/.config/ggsrc")
+		}
 	}
 
 	config, err := reload(cfgFile, nil, runOnce)
