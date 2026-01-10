@@ -1,1 +1,0 @@
-../scrapers/README.md

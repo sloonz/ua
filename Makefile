@@ -17,7 +17,11 @@ doc:
 	test -f doc/ua.md || ln -s ../README.md doc/ua.md
 	test -f doc/ua-scrapers.md || ln -s ../scrapers/README.md doc/ua-scrapers.md
 	for d in $(GODIRS) ; do test -f doc/$$d.md || ln -s ../$$d/README.md doc/$$d.md ; done
-	cd doc ; for f in *.md ; do ronn $$f ; done
+	for f in doc/*.md ; do \
+		base=$${f%.md} ; \
+		pandoc -s -t man $$f -o $$base ; \
+		pandoc -s -t html $$f -o $$base.html ; \
+	done
 
 ggs/ggs: ggs/ggs.go
 	cd ggs; go build
@@ -40,7 +44,7 @@ ua-proxify/ua-proxify: ua-proxify/ua-proxify.go
 ua-send/ua-send: ua-send/ua-send.go
 	cd ua-send; go build
 
-install: all
+install: all doc
 	install -d $(BINDIR)
 	for f in $(GODIRS) ; do install $$f/$$f $(BINDIR)/ ; done
 	for s in $(SCRAPERS) ; do install scrapers/ua-scraper-$$s $(BINDIR)/ ; done
