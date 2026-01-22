@@ -39,6 +39,7 @@ func main() {
 	}
 
 	dec := json.NewDecoder(os.Stdin)
+	enc := json.NewEncoder(os.Stdout)
 	for {
 		msg := new(uamessage.Message)
 		err = dec.Decode(msg)
@@ -47,7 +48,11 @@ func main() {
 			if buildErr != nil {
 				err = buildErr
 			} else {
-				md.CreateMail(mailMsg)
+				if _, createErr := md.CreateMail(mailMsg); createErr != nil {
+					err = createErr
+				} else if encErr := enc.Encode(msg); encErr != nil {
+					err = encErr
+				}
 			}
 		}
 

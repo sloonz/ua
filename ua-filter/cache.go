@@ -19,6 +19,7 @@ import (
 
 type Cache interface {
 	Getset(id, host string) bool
+	Exists(id, host string) bool
 	Put(id, host string, ts int64) error
 	Iterate(fn func(id, host string, ts int64) error) error
 	DeleteOlderThan(cutoff int64) (int, error)
@@ -146,6 +147,17 @@ func (c *fileCache) Getset(id, host string) bool {
 		return true
 	}
 	c.newData[key] = newTimestamp()
+	return false
+}
+
+func (c *fileCache) Exists(id, host string) bool {
+	key := cacheKey(id, host)
+	if _, has := c.data[key]; has {
+		return true
+	}
+	if _, has := c.newData[key]; has {
+		return true
+	}
 	return false
 }
 
@@ -320,6 +332,14 @@ func (c *redisCache) Getset(id, host string) bool {
 	return present
 }
 
+func (c *redisCache) Exists(id, host string) bool {
+	res := c.client.HExists("ua:"+host, id)
+	if res.Err() != nil && res.Err() != redis.Nil {
+		log.Fatalf("Error using redis cache: %s", res.Err())
+	}
+	return res.Val()
+}
+
 func (c *redisCache) Put(id, host string, ts int64) error {
 	if ts <= 0 {
 		ts = newTimestamp()
@@ -450,6 +470,26 @@ func (c *lmdbCache) Getset(id, host string) bool {
 		log.Fatalf("Error using lmdb cache: %s", err.Error())
 	}
 
+	return present
+}
+
+func (c *lmdbCache) Exists(id, host string) bool {
+	key := []byte(cacheKey(id, host))
+	present := false
+	err := c.env.View(func(txn *lmdb.Txn) error {
+		_, err := txn.Get(c.dbi, key)
+		if err == nil {
+			present = true
+			return nil
+		}
+		if lmdb.IsNotFound(err) {
+			return nil
+		}
+		return err
+	})
+	if err != nil {
+		log.Fatalf("Error using lmdb cache: %s", err.Error())
+	}
 	return present
 }
 

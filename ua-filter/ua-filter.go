@@ -64,6 +64,36 @@ func shouldDrop(msg Message) bool {
 	return cache.Getset(id, host)
 }
 
+func shouldDropCheck(msg Message, seen map[string]struct{}) bool {
+	id := getStringField(msg, "id")
+	if id == "" {
+		return false
+	}
+
+	host := getStringField(msg, "host")
+	key := cacheKey(id, host)
+	if _, ok := seen[key]; ok {
+		return true
+	}
+	if cache.Exists(id, host) {
+		return true
+	}
+	seen[key] = struct{}{}
+	return false
+}
+
+func markMessage(msg Message) {
+	id := getStringField(msg, "id")
+	if id == "" {
+		return
+	}
+
+	host := getStringField(msg, "host")
+	if err := cache.Put(id, host, 0); err != nil {
+		log.Printf("Cannot mark message: %s", err.Error())
+	}
+}
+
 func runMigration(srcOpts cacheOptions, dstOpts cacheOptions) {
 	var err error
 
@@ -151,6 +181,7 @@ func main() {
 	var migrateRedisPassword string
 	var migrateLmdbPath string
 	var migrateLmdbMapSize int64
+	var mode string
 
 	flag.StringVar(&opts.path, "cache", os.ExpandEnv("$HOME/.cache/maildir-put.cache"),
 		"path to store message-ids to drop duplicate messages")
@@ -169,6 +200,7 @@ func main() {
 	flag.StringVar(&migrateRedisPassword, "migrate-redis-password", "", "destination redis password for migration")
 	flag.StringVar(&migrateLmdbPath, "migrate-lmdb-path", "", "destination lmdb path for migration")
 	flag.Int64Var(&migrateLmdbMapSize, "migrate-lmdb-map-size", 0, "destination lmdb map size in bytes")
+	flag.StringVar(&mode, "mode", "filter", "message handling mode: filter (drop duplicates and mark), check (drop duplicates only), mark (mark only)")
 
 	if flag.Parse(); !flag.Parsed() {
 		flag.PrintDefaults()
@@ -225,6 +257,12 @@ func main() {
 		return
 	}
 
+	switch mode {
+	case "filter", "check", "mark":
+	default:
+		log.Fatalf("Invalid mode value: %s", mode)
+	}
+
 	if cache, err = NewCache(opts); err != nil {
 		log.Fatalf("Can't open cache: %s", err.Error())
 	}
@@ -236,15 +274,28 @@ func main() {
 
 	dec := json.NewDecoder(os.Stdin)
 	enc := json.NewEncoder(os.Stdout)
+	seen := make(map[string]struct{})
 	for {
 		msg := Message{}
 		err = dec.Decode(&msg)
 		if err == nil {
 			err = normalizeMessage(msg)
 		}
-		if err == nil && shouldDrop(msg) {
-			err = nil
-			continue
+		if err == nil {
+			switch mode {
+			case "filter":
+				if shouldDrop(msg) {
+					err = nil
+					continue
+				}
+			case "check":
+				if shouldDropCheck(msg, seen) {
+					err = nil
+					continue
+				}
+			case "mark":
+				markMessage(msg)
+			}
 		}
 		if err == nil {
 			err = enc.Encode(msg)

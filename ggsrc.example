@@ -1,12 +1,12 @@
 default_timeout=30
 
 rss() {
-	command 2000 "rss2json \"$1\" | ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb | maildir-put -root $HOME/Maildir-feeds -folder \"$2\""
+	command 2000 "rss2json \"$1\" | ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb -mode check | maildir-put -root $HOME/Maildir-feeds -folder \"$2\" | ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb -mode mark"
 }
 
 mangareader() {
 	command 2000 "mangareader2json http://mangareader.net/$1 | "\
-		"ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb | maildir-put -root $HOME/Maildir-feeds -folder Entertainment"
+		"ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb -mode check | maildir-put -root $HOME/Maildir-feeds -folder Entertainment | ua-filter -lmdb -lmdb-path ~/.local/share/ua-messages.lmdb -mode mark"
 }
 
 rss http://xkcd.com/atom.xml Fun

@@ -269,6 +269,7 @@ func main() {
 	}
 
 	dec := json.NewDecoder(os.Stdin)
+	enc := json.NewEncoder(os.Stdout)
 	for {
 		msg := new(uamessage.Message)
 		err = dec.Decode(msg)
@@ -301,6 +302,11 @@ func main() {
 					err = sendLMTP(lmtpNetwork, server, hostname, startTLS, insecure, fromAddr, recipients, mailBytes)
 				} else {
 					err = sendSMTP(server, auth, insecure, fromAddr, recipients, mailBytes)
+				}
+				if err == nil {
+					if encErr := enc.Encode(msg); encErr != nil {
+						err = encErr
+					}
 				}
 			}
 		}
