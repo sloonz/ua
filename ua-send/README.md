@@ -17,6 +17,7 @@ Available arguments:
 * `-insecure`: skip TLS certificate verification (STARTTLS).
 * `-user`, `-password`: SMTP auth settings (PLAIN). Not supported for LMTP.
 * `-from`: override sender address (envelope and From header).
+* `-default-from`: sender address to use when missing (defaults to `-to`).
 * `-to`: recipient list (envelope and To header).
 * `-folder`: folder name to send in a header for server-side filing.
 * `-folder-header`: header name to use with `-folder`. Defaults to

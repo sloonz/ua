@@ -225,6 +225,7 @@ func main() {
 	var lmtp bool
 	var lmtpNetwork string
 	var fromOverride string
+	var defaultFrom string
 	var toList string
 	var folder string
 	var folderHeader string
@@ -237,6 +238,7 @@ func main() {
 	flag.StringVar(&username, "user", "", "SMTP username")
 	flag.StringVar(&password, "password", "", "SMTP password")
 	flag.StringVar(&fromOverride, "from", "", "override sender address")
+	flag.StringVar(&defaultFrom, "default-from", "", "sender address to use when missing (defaults to -to)")
 	flag.StringVar(&toList, "to", "", "recipient addresses")
 	flag.StringVar(&folder, "folder", "", "folder name to set in header (empty to skip)")
 	flag.StringVar(&folderHeader, "folder-header", "x-fileinto", "header to set with -folder")
@@ -275,37 +277,56 @@ func main() {
 		err = dec.Decode(msg)
 		if err == nil {
 			var recipients []string
-			mailMsg, fromAddr, buildErr := uamessage.Build(msg, uamessage.BuildOptions{
-				Folder:            folder,
-				FolderHeader:      strings.TrimSpace(folderHeader),
-				FromOverride:      fromOverride,
-				To:                toList,
-				RequireSender:     true,
-				FillDateIfMissing: true,
-			})
-			if buildErr != nil {
-				err = buildErr
-			} else {
-				var parseErr error
-				recipients, parseErr = parseAddressList(toList)
-				if parseErr != nil {
-					err = fmt.Errorf("invalid -to value: %w", parseErr)
-				} else if len(recipients) == 0 {
-					err = errors.New("Missing recipients")
+			effectiveFromOverride := fromOverride
+			if effectiveFromOverride == "" && msg.AuthorEmail == "" {
+				defaultFromValue := defaultFrom
+				defaultFromSource := "-default-from"
+				if defaultFromValue == "" {
+					defaultFromValue = toList
+					defaultFromSource = "-to"
+				}
+				if defaultFromValue != "" {
+					defaultAddrs, parseErr := parseAddressList(defaultFromValue)
+					if parseErr != nil {
+						err = fmt.Errorf("invalid %s value: %w", defaultFromSource, parseErr)
+					} else if len(defaultAddrs) > 0 {
+						effectiveFromOverride = defaultAddrs[0]
+					}
 				}
 			}
 			if err == nil {
-				mailBytes, readErr := io.ReadAll(mailMsg)
-				if readErr != nil {
-					err = readErr
-				} else if lmtp {
-					err = sendLMTP(lmtpNetwork, server, hostname, startTLS, insecure, fromAddr, recipients, mailBytes)
+				mailMsg, fromAddr, buildErr := uamessage.Build(msg, uamessage.BuildOptions{
+					Folder:            folder,
+					FolderHeader:      strings.TrimSpace(folderHeader),
+					FromOverride:      effectiveFromOverride,
+					To:                toList,
+					RequireSender:     true,
+					FillDateIfMissing: true,
+				})
+				if buildErr != nil {
+					err = buildErr
 				} else {
-					err = sendSMTP(server, auth, insecure, fromAddr, recipients, mailBytes)
+					var parseErr error
+					recipients, parseErr = parseAddressList(toList)
+					if parseErr != nil {
+						err = fmt.Errorf("invalid -to value: %w", parseErr)
+					} else if len(recipients) == 0 {
+						err = errors.New("Missing recipients")
+					}
 				}
 				if err == nil {
-					if encErr := enc.Encode(msg); encErr != nil {
-						err = encErr
+					mailBytes, readErr := io.ReadAll(mailMsg)
+					if readErr != nil {
+						err = readErr
+					} else if lmtp {
+						err = sendLMTP(lmtpNetwork, server, hostname, startTLS, insecure, fromAddr, recipients, mailBytes)
+					} else {
+						err = sendSMTP(server, auth, insecure, fromAddr, recipients, mailBytes)
+					}
+					if err == nil {
+						if encErr := enc.Encode(msg); encErr != nil {
+							err = encErr
+						}
 					}
 				}
 			}
