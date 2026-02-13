@@ -16,7 +16,7 @@ Available arguments:
 * `-lmdb`: specify this flag to use lmdb for message IDs cache
 * `-lmdb-path`: path to the lmdb database
 * `-lmdb-map-size`: lmdb map size in bytes
-* `-mode`: message handling mode: `filter` (default), `check`, or `mark`
+* `-mode`: message handling mode: `filter` (default), `check`, `mark`, or `pipe`
 * `-migrate-to`: migrate cache entries to backend (`redis`, `lmdb`, `file`)
 * `-migrate-cache`: destination cache file for migration
 * `-migrate-redis-addr`, `-migrate-redis-db`, `-migrate-redis-password`:
@@ -45,16 +45,18 @@ Messages missing mandatory fields (*body* or *title*) are dropped.
 
 ## Modes
 
-`ua-filter` supports three modes (set with `-mode`):
+`ua-filter` supports four modes (set with `-mode`):
 
 * `filter`: drop duplicates and mark them in the cache (default)
 * `check`: drop duplicates without marking them in the cache
 * `mark`: mark messages in the cache without dropping them
+* `pipe`: drop duplicates, run a command, and mark output messages in the cache
 
 `check` is useful before a sender that may fail. In that case you can
 mark only after a successful send:
 
 	rss2json url | ua-filter -mode check | ua-send | ua-filter -mode mark
+	rss2json url | ua-filter -mode pipe ua-send -to me@example.net
 
 ## Migration
 

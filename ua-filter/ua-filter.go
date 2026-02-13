@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -170,6 +171,103 @@ func runGC(opts cacheOptions, ttl string) {
 	log.Printf("Garbage-collected %d entries", removed)
 }
 
+func runPipeMode(cmdArgs []string) {
+	if len(cmdArgs) == 0 {
+		log.Fatal("Missing command for -mode pipe")
+	}
+
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd.Stderr = os.Stderr
+
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatalf("Can't open pipe command stdin: %s", err.Error())
+	}
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatalf("Can't open pipe command stdout: %s", err.Error())
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Can't start pipe command: %s", err.Error())
+	}
+
+	inputDone := make(chan error, 1)
+	outputDone := make(chan error, 1)
+
+	go func() {
+		defer func() {
+			_ = stdinPipe.Close()
+		}()
+
+		dec := json.NewDecoder(os.Stdin)
+		enc := json.NewEncoder(stdinPipe)
+		seen := make(map[string]struct{})
+		for {
+			msg := Message{}
+			err := dec.Decode(&msg)
+			if err == nil {
+				err = normalizeMessage(msg)
+			}
+			if err == nil {
+				if shouldDropCheck(msg, seen) {
+					continue
+				}
+				if err = enc.Encode(msg); err != nil {
+					inputDone <- err
+					return
+				}
+			}
+
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Printf("Cannot process input message: %s", err.Error())
+			}
+		}
+		inputDone <- nil
+	}()
+
+	go func() {
+		dec := json.NewDecoder(stdoutPipe)
+		enc := json.NewEncoder(os.Stdout)
+		for {
+			msg := Message{}
+			err := dec.Decode(&msg)
+			if err == nil {
+				err = normalizeMessage(msg)
+			}
+			if err == nil {
+				markMessage(msg)
+				if err = enc.Encode(msg); err != nil {
+					outputDone <- err
+					return
+				}
+			}
+
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Printf("Cannot process output message: %s", err.Error())
+			}
+		}
+		outputDone <- nil
+	}()
+
+	waitErr := cmd.Wait()
+	inputErr := <-inputDone
+	outputErr := <-outputDone
+	if inputErr != nil {
+		log.Printf("Pipe input error: %s", inputErr.Error())
+	}
+	if outputErr != nil {
+		log.Printf("Pipe output error: %s", outputErr.Error())
+	}
+	if waitErr != nil {
+		log.Printf("Pipe command failed: %s", waitErr.Error())
+	}
+}
+
 func main() {
 	var err error
 	var opts cacheOptions
@@ -200,7 +298,7 @@ func main() {
 	flag.StringVar(&migrateRedisPassword, "migrate-redis-password", "", "destination redis password for migration")
 	flag.StringVar(&migrateLmdbPath, "migrate-lmdb-path", "", "destination lmdb path for migration")
 	flag.Int64Var(&migrateLmdbMapSize, "migrate-lmdb-map-size", 0, "destination lmdb map size in bytes")
-	flag.StringVar(&mode, "mode", "filter", "message handling mode: filter (drop duplicates and mark), check (drop duplicates only), mark (mark only)")
+	flag.StringVar(&mode, "mode", "filter", "message handling mode: filter (drop duplicates and mark), check (drop duplicates only), mark (mark only), pipe (drop duplicates, run command, mark output)")
 
 	if flag.Parse(); !flag.Parsed() {
 		flag.PrintDefaults()
@@ -258,7 +356,7 @@ func main() {
 	}
 
 	switch mode {
-	case "filter", "check", "mark":
+	case "filter", "check", "mark", "pipe":
 	default:
 		log.Fatalf("Invalid mode value: %s", mode)
 	}
@@ -270,6 +368,14 @@ func main() {
 
 	if hostname, err = os.Hostname(); err != nil {
 		log.Fatalf("Can't get hostname: %s", err.Error())
+	}
+
+	if mode == "pipe" {
+		runPipeMode(flag.Args())
+		if err = cache.Dump(); err != nil {
+			log.Printf("warning: can't dump cache: %s", err.Error())
+		}
+		return
 	}
 
 	dec := json.NewDecoder(os.Stdin)
